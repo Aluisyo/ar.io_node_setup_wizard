@@ -55,11 +55,6 @@ export interface NodeConfig {
   NODE_MAX_OLD_SPACE_SIZE?: string;
   // Core AR.IO node ports (from official .env.example)
   CORE_PORT: string;
-  // Chain cache configuration (core node settings)
-  CHAIN_CACHE_TYPE?: string;
-  REDIS_CACHE_URL?: string;
-  REDIS_USE_TLS?: boolean;
-  REDIS_CACHE_TTL_SECONDS?: string;
   /** Additional raw env vars (KEY=VAL per line) */
   ADDITIONAL_ENV?: string;
 }
@@ -141,6 +136,10 @@ export interface DashboardConfig {
   AR_IO_SQLITE_BACKUP_S3_BUCKET_PREFIX?: string;
   
   // Redis configuration (service-specific)
+  CHAIN_CACHE_TYPE?: string;
+  REDIS_CACHE_URL?: string;
+  REDIS_USE_TLS?: boolean;
+  REDIS_CACHE_TTL_SECONDS?: string;
   REDIS_MAX_MEMORY?: string;
   EXTRA_REDIS_FLAGS?: string;
 }

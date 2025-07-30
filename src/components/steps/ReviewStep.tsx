@@ -1,6 +1,6 @@
 import React from 'react';
 import { DeploymentConfig } from '../../types';
-import { Server, Globe, Package, Cpu, Copy, Download, FileText, BarChart2 } from 'lucide-react';
+import { Server, Globe, Package, Cpu, Copy, Download, FileText, BarChart2, Eye } from 'lucide-react';
 
 interface ReviewStepProps {
   config: DeploymentConfig;
@@ -75,7 +75,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
     });
     
     // Add service-specific node configs only when services are enabled
-    if (config.dashboardConfig.ENABLE_BUNDLER) {
+    if (config.dockerConfig.enableBundler) {
       serviceSpecificNodeConfigs.bundler.forEach(key => {
         if (config.nodeConfig[key as keyof typeof config.nodeConfig] != null && 
             config.nodeConfig[key as keyof typeof config.nodeConfig] !== '' && 
@@ -101,10 +101,10 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
     }
     
     // Add service-specific dashboard configs only when services are enabled
-    const anyServiceEnabled = config.dashboardConfig.ENABLE_BUNDLER || config.dashboardConfig.ENABLE_AO_CU || 
-                             config.dashboardConfig.ENABLE_GRAFANA || config.dashboardConfig.ENABLE_DASHBOARD ||
-                             config.dashboardConfig.ENABLE_CLICKHOUSE || config.dashboardConfig.ENABLE_LITESTREAM ||
-                             config.dashboardConfig.ENABLE_AUTOHEAL;
+    const anyServiceEnabled = config.dockerConfig.enableBundler || config.dockerConfig.enableAoCu || 
+                             config.dockerConfig.enableGrafana || config.dashboardConfig.ENABLE_DASHBOARD ||
+                             config.dockerConfig.enableClickhouse || config.dockerConfig.enableLitestream ||
+                             config.dockerConfig.enableAutoheal;
     
     if (anyServiceEnabled) {
       serviceSpecificDashboardConfigs.redis.forEach(key => {
@@ -119,7 +119,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
     }
     
     // Add ClickHouse configs when ClickHouse is enabled
-    if (config.dashboardConfig.ENABLE_CLICKHOUSE) {
+    if (config.dockerConfig.enableClickhouse) {
       serviceSpecificDashboardConfigs.clickhouse.forEach(key => {
         if (config.dashboardConfig[key as keyof typeof config.dashboardConfig] != null && 
             config.dashboardConfig[key as keyof typeof config.dashboardConfig] !== '' && 
@@ -132,7 +132,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
     }
     
     // Add Litestream configs when Litestream is enabled
-    if (config.dashboardConfig.ENABLE_LITESTREAM) {
+    if (config.dockerConfig.enableLitestream) {
       serviceSpecificDashboardConfigs.litestream.forEach(key => {
         if (config.dashboardConfig[key as keyof typeof config.dashboardConfig] != null && 
             config.dashboardConfig[key as keyof typeof config.dashboardConfig] !== '' && 
@@ -145,7 +145,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
     }
     
     // Bundler-specific configs
-    if (config.dashboardConfig.ENABLE_BUNDLER) {
+    if (config.dockerConfig.enableBundler) {
       const bundlerConfigs = [
         'BUNDLER_ARWEAVE_WALLET', 'GATEWAY_URL', 'UPLOADER_URL', 'APP_NAME', 'ANS104_INDEX_FILTER', 'ANS104_UNBUNDLE_FILTER',
         'AWS_S3_CONTIGUOUS_DATA_BUCKET', 'AWS_S3_CONTIGUOUS_DATA_PREFIX', 'AWS_ACCESS_KEY_ID',
@@ -163,7 +163,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
     }
     
     // AO CU specific configs
-    if (config.dashboardConfig.ENABLE_AO_CU) {
+    if (config.dockerConfig.enableAoCu) {
       const aoCuConfigs = [
         'CU_WALLET', 'PROCESS_CHECKPOINT_TRUSTED_OWNERS', 'ADDITIONAL_AO_CU_ENV'
       ];
@@ -179,7 +179,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
     }
     
     // Grafana specific configs
-    if (config.dashboardConfig.ENABLE_GRAFANA) {
+    if (config.dockerConfig.enableGrafana) {
       const grafanaConfigs = ['GRAFANA_PORT'];
       grafanaConfigs.forEach(key => {
         if (config.dashboardConfig[key as keyof typeof config.dashboardConfig] != null && 
@@ -553,11 +553,11 @@ networks:
                 <span className="font-medium text-gray-600">ClickHouse:</span>
               </div>
               <span className={`px-2 py-1 rounded text-xs ${
-                config.dashboardConfig.ENABLE_CLICKHOUSE 
+                config.dockerConfig.enableClickhouse 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-gray-100 text-gray-600'
               }`}>
-                {config.dashboardConfig.ENABLE_CLICKHOUSE ? 'Enabled' : 'Disabled'}
+                {config.dockerConfig.enableClickhouse ? 'Enabled' : 'Disabled'}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -566,11 +566,24 @@ networks:
                 <span className="font-medium text-gray-600">Litestream:</span>
               </div>
               <span className={`px-2 py-1 rounded text-xs ${
-                config.dashboardConfig.ENABLE_LITESTREAM 
+                config.dockerConfig.enableLitestream 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-gray-100 text-gray-600'
               }`}>
-                {config.dashboardConfig.ENABLE_LITESTREAM ? 'Enabled' : 'Disabled'}
+                {config.dockerConfig.enableLitestream ? 'Enabled' : 'Disabled'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <Eye className="w-3 h-3 text-gray-500 mr-2" />
+                <span className="font-medium text-gray-600">Observer:</span>
+              </div>
+              <span className={`px-2 py-1 rounded text-xs ${
+                config.nodeConfig.RUN_OBSERVER 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-gray-100 text-gray-600'
+              }`}>
+                {config.nodeConfig.RUN_OBSERVER ? 'Enabled' : 'Disabled'}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -579,11 +592,11 @@ networks:
                 <span className="font-medium text-gray-600">Autoheal:</span>
               </div>
               <span className={`px-2 py-1 rounded text-xs ${
-                config.dashboardConfig.ENABLE_AUTOHEAL 
+                config.dockerConfig.enableAutoheal 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-gray-100 text-gray-600'
               }`}>
-                {config.dashboardConfig.ENABLE_AUTOHEAL ? 'Enabled' : 'Disabled'}
+                {config.dockerConfig.enableAutoheal ? 'Enabled' : 'Disabled'}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -592,11 +605,11 @@ networks:
                 <span className="font-medium text-gray-600">Bundler:</span>
               </div>
               <span className={`px-2 py-1 rounded text-xs ${
-                config.dashboardConfig.ENABLE_BUNDLER 
+                config.dockerConfig.enableBundler 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-gray-100 text-gray-600'
               }`}>
-                {config.dashboardConfig.ENABLE_BUNDLER ? 'Enabled' : 'Disabled'}
+                {config.dockerConfig.enableBundler ? 'Enabled' : 'Disabled'}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -605,11 +618,11 @@ networks:
                 <span className="font-medium text-gray-600">AO CU:</span>
               </div>
               <span className={`px-2 py-1 rounded text-xs ${
-                config.dashboardConfig.ENABLE_AO_CU 
+                config.dockerConfig.enableAoCu 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-gray-100 text-gray-600'
               }`}>
-                {config.dashboardConfig.ENABLE_AO_CU ? 'Enabled' : 'Disabled'}
+                {config.dockerConfig.enableAoCu ? 'Enabled' : 'Disabled'}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -618,11 +631,11 @@ networks:
                 <span className="font-medium text-gray-600">Grafana:</span>
               </div>
               <span className={`px-2 py-1 rounded text-xs ${
-                config.dashboardConfig.ENABLE_GRAFANA 
+                config.dockerConfig.enableGrafana 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-gray-100 text-gray-600'
               }`}>
-                {config.dashboardConfig.ENABLE_GRAFANA ? 'Enabled' : 'Disabled'}
+                {config.dockerConfig.enableGrafana ? 'Enabled' : 'Disabled'}
               </span>
             </div>
             <div className="flex justify-between items-center">

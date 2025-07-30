@@ -204,7 +204,7 @@ export const SuccessStep: React.FC<SuccessStepProps> = ({ config, onReset }) => 
         )}
 
         {/* Prometheus UI */}
-        {config.dashboardConfig.ENABLE_GRAFANA && (
+        {config.dockerConfig.enableGrafana && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 text-center h-full flex flex-col justify-between min-h-[20rem]">
             <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg mx-auto mb-4">
               <BarChart2 className="w-5 h-5 text-gray-700" />
@@ -220,7 +220,7 @@ export const SuccessStep: React.FC<SuccessStepProps> = ({ config, onReset }) => 
         )}
 
         {/* Grafana */}
-        {config.dashboardConfig.ENABLE_GRAFANA && (
+        {config.dockerConfig.enableGrafana && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 text-center h-full flex flex-col justify-between min-h-[20rem]">
             <div className="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-lg mx-auto mb-4">
               <Globe className="w-5 h-5 text-orange-700" />
@@ -236,7 +236,7 @@ export const SuccessStep: React.FC<SuccessStepProps> = ({ config, onReset }) => 
         )}
 
         {/* Bundler Service */}
-        {config.dashboardConfig.ENABLE_BUNDLER && (
+        {config.dockerConfig.enableBundler && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 text-center h-full flex flex-col justify-between min-h-[20rem]">
             <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-lg mx-auto mb-4">
               <Package className="w-5 h-5 text-green-700" />
@@ -252,7 +252,7 @@ export const SuccessStep: React.FC<SuccessStepProps> = ({ config, onReset }) => 
         )}
 
         {/* AO CU Service */}
-        {config.dashboardConfig.ENABLE_AO_CU && (
+        {config.dockerConfig.enableAoCu && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 text-center h-full flex flex-col justify-between min-h-[20rem]">
             <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-lg mx-auto mb-4">
               <Cpu className="w-5 h-5 text-purple-700" />

@@ -38,9 +38,7 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
     onChange({ ...config, [field]: value });
   };
 
-  const handleNodeInputChange = (field: keyof NodeConfig, value: string | boolean) => {
-    onNodeChange({ ...nodeConfig, [field]: value });
-  };
+
 
   const handleBundlerWalletSelect = (file: File) => {
     const reader = new FileReader();

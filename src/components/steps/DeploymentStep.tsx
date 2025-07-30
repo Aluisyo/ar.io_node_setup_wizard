@@ -33,7 +33,8 @@ export const DeploymentStepComponent: React.FC<DeploymentStepProps> = ({
   const [logLines, setLogLines] = useState<string[]>([]);
 
   const hasStartedRef = useRef(false);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<number | null>(null);
+  const logsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!hasStartedRef.current) {
@@ -50,6 +51,13 @@ export const DeploymentStepComponent: React.FC<DeploymentStepProps> = ({
       }
     };
   }, []);
+
+  // Auto-scroll logs to bottom when new logs are added
+  useEffect(() => {
+    if (logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
+  }, [logLines]);
 
   // Simple helper to map backend logs to current step index (basic heuristics)
   const parseCurrentStep = (logs: string[]): number => {
@@ -310,7 +318,7 @@ export const DeploymentStepComponent: React.FC<DeploymentStepProps> = ({
           <h4 className="text-white font-medium">Deployment Logs</h4>
           <span className="text-xs text-green-400">Live</span>
         </div>
-        <div className="text-xs text-green-400 font-mono space-y-1 max-h-32 overflow-y-auto">
+        <div ref={logsContainerRef} className="text-xs text-green-400 font-mono space-y-1 max-h-32 overflow-y-auto">
           {logLines.length === 0 && <div>Waiting for logs...</div>}
           {logLines.map((l, i) => (
             <div key={i}>{l}</div>

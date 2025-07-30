@@ -103,6 +103,29 @@ app.post('/deploy', async (req, res) => {
   try {
     appendLog('Received deployment request');
     deploymentCancelled = false;
+    
+    // CRITICAL: Derive bundler address BEFORE building env file
+    if (config.dockerConfig.enableBundler && config.dashboardConfig.BUNDLER_ARWEAVE_WALLET) {
+      let bundlerAddress = config.dashboardConfig.BUNDLER_ARWEAVE_ADDRESS || '';
+      
+      if (config.dashboardConfig.BUNDLER_ARWEAVE_WALLET) {
+        try {
+          const arweave = Arweave.init({});
+          const walletJwk = JSON.parse(config.dashboardConfig.BUNDLER_ARWEAVE_WALLET);
+          const derivedAddress = await arweave.wallets.jwkToAddress(walletJwk);
+          if (derivedAddress) {
+            bundlerAddress = derivedAddress;
+            appendLog(`✅ Pre-derived bundler address: ${bundlerAddress}`);
+          }
+        } catch (err) {
+          appendLog(`⚠️ Pre-derivation failed: ${err.message}`);
+        }
+      }
+      
+      // Update config with derived address
+      config.dashboardConfig.BUNDLER_ARWEAVE_ADDRESS = bundlerAddress || '';
+    }
+    
     // Prepare deployment directory (no cleanup - we'll update existing repo)
     const envContent = buildEnvFile(config);
     const deployDir = '/tmp/ar-io-node';
@@ -349,17 +372,22 @@ scrape_configs:
       appendLog('Created Prometheus configuration with AR.IO node metrics scraping');
     }
     
-    // Create docker-compose.override.yaml for network configuration and Grafana permissions
-    const overrideYaml = `# Docker Compose override to fix network configuration and Grafana permissions
+    // Create docker-compose.override.yaml for network configuration and conditional Grafana permissions
+    let overrideYaml = `# Docker Compose override to fix network configuration
 networks:
   ar-io-network:
     name: \${DOCKER_NETWORK_NAME:-ar-io-network}
     external: false
-
+`;
+    
+    // Only add Grafana service override if Grafana is enabled
+    if (config.dockerConfig.enableGrafana) {
+      overrideYaml += `
 services:
   grafana:
     user: "0:0"  # Run as root to fix /var/lib/grafana permissions
 `;
+    }
     
     await fs.writeFile(`${deployDir}/docker-compose.override.yaml`, overrideYaml, 'utf8');
     appendLog('Created docker-compose.override.yaml with network configuration');
@@ -388,17 +416,35 @@ services:
       const dd = config.dashboardConfig;
       
       // Derive bundler address from wallet if not provided
-      let bundlerAddress = dd.BUNDLER_ARWEAVE_ADDRESS;
-      if (!bundlerAddress && dd.BUNDLER_ARWEAVE_WALLET) {
+      let bundlerAddress = dd.BUNDLER_ARWEAVE_ADDRESS || '';
+      
+      // Always try to derive from wallet if wallet is provided
+      if (dd.BUNDLER_ARWEAVE_WALLET) {
         try {
           const arweave = Arweave.init({});
           const walletJwk = JSON.parse(dd.BUNDLER_ARWEAVE_WALLET);
-          bundlerAddress = await arweave.wallets.jwkToAddress(walletJwk);
-          appendLog(`✅ Derived bundler address: ${bundlerAddress}`);
+          const derivedAddress = await arweave.wallets.jwkToAddress(walletJwk);
+          if (derivedAddress) {
+            bundlerAddress = derivedAddress;
+            appendLog(`✅ Derived bundler address from wallet: ${bundlerAddress}`);
+          } else {
+            appendLog(`⚠️ Wallet derivation returned empty address`);
+          }
         } catch (err) {
-          appendLog(`⚠️ Failed to derive bundler address: ${err.message}`);
-          bundlerAddress = ''; // Fallback to empty string
+          appendLog(`⚠️ Failed to derive bundler address from wallet: ${err.message}`);
+          // Keep existing address or empty string
         }
+      }
+      
+      // Ensure we always have a value (even if empty)
+      bundlerAddress = bundlerAddress || '';
+      appendLog(`📝 Final bundler address: '${bundlerAddress}'`);
+      
+      // Update the config with the derived address so it's available for main .env file
+      config.dashboardConfig.BUNDLER_ARWEAVE_ADDRESS = bundlerAddress;
+      
+      if (!bundlerAddress) {
+        appendLog(`⚠️ Warning: BUNDLER_ARWEAVE_ADDRESS is empty - this may cause bundler issues`);
       }
       
       const bundlerLines = [
@@ -420,10 +466,10 @@ services:
     try {
       // Build profiles for down command
       const downProfiles = [];
-      if (config.dashboardConfig.ENABLE_CLICKHOUSE) {
+      if (config.dockerConfig.enableClickhouse) {
         downProfiles.push('--profile clickhouse');
       }
-      if (config.dashboardConfig.ENABLE_LITESTREAM) {
+      if (config.dockerConfig.enableLitestream) {
         downProfiles.push('--profile litestream');
       }
       
@@ -468,11 +514,11 @@ services:
     
     // Add profiles for advanced services
     const profiles = [];
-    if (config.dashboardConfig.ENABLE_CLICKHOUSE) {
+    if (config.dockerConfig.enableClickhouse) {
       profiles.push('clickhouse');
       appendLog('Enabling ClickHouse profile');
     }
-    if (config.dashboardConfig.ENABLE_LITESTREAM) {
+    if (config.dockerConfig.enableLitestream) {
       profiles.push('litestream');
       appendLog('Enabling Litestream profile');
     }
@@ -509,13 +555,13 @@ services:
     }
     
     // Add ClickHouse services if enabled (these use profiles)
-    if (config.dashboardConfig.ENABLE_CLICKHOUSE) {
+    if (config.dockerConfig.enableClickhouse) {
       servicesToStart.push('clickhouse', 'clickhouse-auto-import');
       appendLog('Including ClickHouse analytics services');
     }
     
     // Add Litestream backup service if enabled (uses profile)
-    if (config.dashboardConfig.ENABLE_LITESTREAM) {
+    if (config.dockerConfig.enableLitestream) {
       servicesToStart.push('litestream');
       appendLog('Including Litestream SQLite backup service');
     }
@@ -616,11 +662,9 @@ services:
                 await execPromise(`docker cp ${deployDir}/monitoring/grafana/provisioning/dashboards ar-io-node-grafana-1:/etc/grafana/provisioning/`, { cwd: deployDir });
                 appendLog('✅ Copied Grafana dashboards provisioning to container');
                 
-                await execPromise(`docker cp ${deployDir}/monitoring/grafana/provisioning/plugins ar-io-node-grafana-1:/etc/grafana/provisioning/`, { cwd: deployDir });
-                appendLog('✅ Copied Grafana plugins provisioning to container');
-                
-                await execPromise(`docker cp ${deployDir}/monitoring/grafana/provisioning/alerting ar-io-node-grafana-1:/etc/grafana/provisioning/`, { cwd: deployDir });
-                appendLog('✅ Copied Grafana alerting provisioning to container');
+                // Copy actual dashboard JSON files
+                await execPromise(`docker cp ${deployDir}/monitoring/grafana/dashboards ar-io-node-grafana-1:/etc/grafana/`, { cwd: deployDir });
+                appendLog('✅ Copied Grafana dashboard JSON files to container');
                 
                 // Restart Grafana to reload provisioning
                 await execPromise(`docker compose ${composeArgs.slice(1).join(' ')} restart grafana`, { cwd: deployDir });
@@ -937,7 +981,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   // Bundler-specific configs
   if (dockerConfig.enableBundler) {
     const bundlerConfigs = [
-      'BUNDLER_ARWEAVE_WALLET', 'GATEWAY_URL', 'UPLOADER_URL', 'APP_NAME', 'ANS104_INDEX_FILTER', 'ANS104_UNBUNDLE_FILTER',
+      'BUNDLER_ARWEAVE_WALLET', 'BUNDLER_ARWEAVE_ADDRESS', 'GATEWAY_URL', 'UPLOADER_URL', 'APP_NAME', 'ANS104_INDEX_FILTER', 'ANS104_UNBUNDLE_FILTER',
       'AWS_S3_CONTIGUOUS_DATA_BUCKET', 'AWS_S3_CONTIGUOUS_DATA_PREFIX', 'AWS_ACCESS_KEY_ID',
       'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'AWS_ENDPOINT', 'ALLOW_LISTED_ADDRESSES'
     ];

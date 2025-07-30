@@ -60,11 +60,11 @@ export const useWizard = () => {
       SANDBOX_PROTOCOL: 'https',
       // Additional official AR.IO node settings
       START_WRITERS: true,
-      RUN_OBSERVER: false,
+      RUN_OBSERVER: true,
       ENABLE_MEMPOOL_WATCHER: true,
       MEMPOOL_POLLING_INTERVAL_MS: '30000',
       BACKFILL_BUNDLE_RECORDS: false,
-      RUN_AUTOHEAL: false,
+      RUN_AUTOHEAL: true,
       // Node.js optimization
       NODE_MAX_OLD_SPACE_SIZE: '8192',
       // Core AR.IO node ports (from official .env.example)
@@ -158,8 +158,13 @@ export const useWizard = () => {
       errors.push({ field: 'AR_IO_WALLET', message: 'AR.IO Wallet is required for network participation' });
     }
     
-    // Observer wallet is optional per docs – only validate if provided but invalid (e.g. whitespace)
-    if (nodeConfig.OBSERVER_WALLET && !nodeConfig.OBSERVER_WALLET.trim()) {
+    // Observer wallet is required when observer service is enabled
+    if (nodeConfig.RUN_OBSERVER) {
+      if (!nodeConfig.OBSERVER_WALLET || !nodeConfig.OBSERVER_WALLET.trim()) {
+        errors.push({ field: 'OBSERVER_WALLET', message: 'Observer Wallet is required when Observer service is enabled' });
+      }
+    } else if (nodeConfig.OBSERVER_WALLET && !nodeConfig.OBSERVER_WALLET.trim()) {
+      // If observer is disabled but wallet is provided, validate it's not just whitespace
       errors.push({ field: 'OBSERVER_WALLET', message: 'Observer Wallet cannot be blank if supplied' });
     }
     
@@ -311,20 +316,17 @@ export const useWizard = () => {
       SANDBOX_PROTOCOL: 'https',
       // Additional official AR.IO node settings
       START_WRITERS: true,
-      RUN_OBSERVER: false,
+      RUN_OBSERVER: true,
       ENABLE_MEMPOOL_WATCHER: true,
       MEMPOOL_POLLING_INTERVAL_MS: '30000',
       BACKFILL_BUNDLE_RECORDS: false,
-      RUN_AUTOHEAL: false,
+      RUN_AUTOHEAL: true,
       // Node.js optimization
       NODE_MAX_OLD_SPACE_SIZE: '8192',
       // Core AR.IO node ports (from official .env.example)
       CORE_PORT: '4000',
-      // Chain cache configuration (core node settings)
-      CHAIN_CACHE_TYPE: 'redis',
-      REDIS_CACHE_URL: 'redis://redis:6379',
-      REDIS_USE_TLS: false,
-      REDIS_CACHE_TTL_SECONDS: '3600',
+      /** Additional raw env vars (KEY=VAL per line) */
+      ADDITIONAL_ENV: '',
     });
     setDashboardConfig({
       ADMIN_API_KEY: '',
@@ -398,7 +400,7 @@ export const useWizard = () => {
       enableDashboard: dashboardConfig.ENABLE_DASHBOARD,
       enableClickhouse: dashboardConfig.ENABLE_CLICKHOUSE || false,
       enableLitestream: dashboardConfig.ENABLE_LITESTREAM || false,
-      enableAutoheal: dashboardConfig.ENABLE_AUTOHEAL || false,
+      enableAutoheal: nodeConfig.RUN_AUTOHEAL || false,
     },
   });
 

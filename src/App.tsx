@@ -172,9 +172,7 @@ function App() {
               </span>
             </div>
             <div className="flex items-center space-x-6 text-sm text-gray-500">
-              <a href="#" className="hover:text-gray-700 transition-colors">Documentation</a>
-              <a href="#" className="hover:text-gray-700 transition-colors">Support</a>
-              <a href="#" className="hover:text-gray-700 transition-colors">Community</a>
+              <a href="https://github.com/Aluisyo/ar.io_node_setup_wizard" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 transition-colors">GitHub</a>
               <span>© {new Date().getFullYear()} Aluisyo</span>
             </div>
           </div>

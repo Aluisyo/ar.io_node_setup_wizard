@@ -528,8 +528,8 @@ export const NodeConfigStep: React.FC<NodeConfigStepProps> = ({
                   <input
                     type="checkbox"
                     id="enableAutoheal"
-                    checked={dashboardConfig.ENABLE_AUTOHEAL || false}
-                    onChange={(e) => onDashboardChange({ ...dashboardConfig, ENABLE_AUTOHEAL: e.target.checked })}
+                    checked={config.RUN_AUTOHEAL || false}
+                    onChange={(e) => handleInputChange('RUN_AUTOHEAL', e.target.checked)}
                     className="w-4 h-4 text-black bg-white border-gray-300 rounded focus:ring-black focus:ring-2"
                   />
                   <div className="flex items-center space-x-2">
