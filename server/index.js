@@ -214,7 +214,54 @@ app.post('/deploy', async (req, res) => {
     // Repository cloned directly to deployment directory
     appendLog('Setting up deployment directory...');
     
-
+    // Fetch admin dashboard files if dashboard is enabled
+    if (config.dockerConfig.enableDashboard) {
+      appendLog('Admin dashboard enabled - fetching dashboard files...');
+      
+      try {
+        // Fetch .env.dashboard.example
+        const envDashboardExampleUrl = 'https://raw.githubusercontent.com/Aluisyo/ar.io_admin_dashboard/main/.env.dashboard.example';
+        const envDashboardResponse = await fetch(envDashboardExampleUrl);
+        
+        if (envDashboardResponse.ok) {
+          const envDashboardContent = await envDashboardResponse.text();
+          await fs.writeFile(`${deployDir}/.env.dashboard.example`, envDashboardContent, 'utf8');
+          appendLog('✅ Downloaded .env.dashboard.example');
+        } else {
+          appendLog(`⚠️ Failed to download .env.dashboard.example: ${envDashboardResponse.status}`);
+        }
+        
+        // Fetch docker-compose.dashboard.yml
+        const dockerComposeUrl = 'https://raw.githubusercontent.com/Aluisyo/ar.io_admin_dashboard/main/docker-compose.dashboard.yml';
+        const dockerComposeResponse = await fetch(dockerComposeUrl);
+        
+        if (dockerComposeResponse.ok) {
+          const dockerComposeContent = await dockerComposeResponse.text();
+          await fs.writeFile(`${deployDir}/docker-compose.dashboard.yml`, dockerComposeContent, 'utf8');
+          appendLog('✅ Downloaded docker-compose.dashboard.yml');
+        } else {
+          appendLog(`⚠️ Failed to download docker-compose.dashboard.yml: ${dockerComposeResponse.status}`);
+        }
+        
+        // Create .env.dashboard file with user configuration
+        const dashboardEnvLines = [
+          `ADMIN_USERNAME=${config.dashboardConfig.ADMIN_USERNAME}`,
+          `ADMIN_PASSWORD=${config.dashboardConfig.ADMIN_PASSWORD}`,
+          `NEXTAUTH_SECRET=${config.dashboardConfig.NEXTAUTH_SECRET || 'your-admin-api-key'}`,
+          `NEXTAUTH_URL=${config.dashboardConfig.NEXTAUTH_URL || `http://localhost:${config.dashboardConfig.DASHBOARD_PORT}`}`,
+          `AR_IO_NODE_PATH=${config.dashboardConfig.AR_IO_NODE_PATH || deployDir}`,
+          `DOCKER_PROJECT=${config.dashboardConfig.DOCKER_PROJECT || 'ar-io-node'}`,
+          `NEXT_PUBLIC_GRAFANA_URL=${config.dashboardConfig.NEXT_PUBLIC_GRAFANA_URL || `http://localhost:${config.dashboardConfig.GRAFANA_PORT}`}`,
+          `ADMIN_API_KEY=${config.nodeConfig.ADMIN_API_KEY}`
+        ];
+        
+        await fs.writeFile(`${deployDir}/.env.dashboard`, dashboardEnvLines.join('\n'), 'utf8');
+        appendLog('✅ Created .env.dashboard with user configuration');
+        
+      } catch (error) {
+        appendLog(`⚠️ Error fetching admin dashboard files: ${error.message}`);
+      }
+    }
     
     // Fix port mappings in docker-compose files
     const composeFiles = ['docker-compose.yaml'];
@@ -281,6 +328,35 @@ app.post('/deploy', async (req, res) => {
         appendLog('Fixed Grafana compose file: port mappings, network config, and removed problematic prometheus.yml mount');
       }
       composeFiles.push('docker-compose.grafana.yaml');
+    }
+    
+    // Add dashboard compose file if dashboard is enabled
+    if (config.dockerConfig.enableDashboard) {
+      const dashboardComposePath = `${deployDir}/docker-compose.dashboard.yml`;
+      if (await fs.access(dashboardComposePath).then(() => true).catch(() => false)) {
+        let dashboardCompose = await fs.readFile(dashboardComposePath, 'utf8');
+        
+        // Fix port mappings in dashboard compose
+        dashboardCompose = fixPortMappings(dashboardCompose);
+        
+        // Fix dashboard port mapping specifically (dashboard uses port 3001 internally)
+        dashboardCompose = dashboardCompose.replace(
+          /ports:\s*\n\s*-\s*["']?\d+:3001["']?/g,
+          `ports:\n      - "\${DASHBOARD_PORT:-${config.dashboardConfig.DASHBOARD_PORT}}:3001"`
+        );
+        
+        // Also handle single-line port mappings
+        dashboardCompose = dashboardCompose.replace(
+          /["']?\d+:3001["']?/g, 
+          `"\${DASHBOARD_PORT:-${config.dashboardConfig.DASHBOARD_PORT}}:3001"`
+        );
+        
+        await fs.writeFile(dashboardComposePath, dashboardCompose, 'utf8');
+        appendLog('Fixed dashboard compose file: port mappings updated');
+        composeFiles.push('docker-compose.dashboard.yml');
+      } else {
+        appendLog('⚠️ Dashboard compose file not found, dashboard may not be deployed');
+      }
     }
 
     // ClickHouse files are already available in the cloned repository
@@ -399,6 +475,9 @@ services:
       appendLog(`Gateway accessible at: http://localhost:${config.dashboardConfig.ENVOY_PORT}`);
     }
     appendLog(`Core API accessible at: http://localhost:${config.nodeConfig.CORE_PORT}`);
+    if (config.dockerConfig.enableDashboard) {
+      appendLog(`Admin Dashboard will be accessible at: http://localhost:${config.dashboardConfig.DASHBOARD_PORT}`);
+    }
     // Write module-specific env files
     if (config.dockerConfig.enableAoCu) {
       const dd = config.dashboardConfig;
@@ -582,6 +661,12 @@ services:
     if (config.dockerConfig.enableGrafana) {
       servicesToStart.push('prometheus', 'grafana', 'node-exporter');
       appendLog('Including Grafana monitoring services');
+    }
+    
+    // Add Admin Dashboard service if enabled
+    if (config.dockerConfig.enableDashboard) {
+      servicesToStart.push('admin-dashboard');
+      appendLog('Including Admin Dashboard service');
     }
     
     // Start all services at once

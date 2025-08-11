@@ -112,6 +112,11 @@ export interface DashboardConfig {
   DASHBOARD_PORT: string;
   ADMIN_USERNAME: string;
   ADMIN_PASSWORD: string;
+  NEXTAUTH_SECRET?: string;
+  NEXTAUTH_URL?: string;
+  AR_IO_NODE_PATH?: string;
+  DOCKER_PROJECT?: string;
+  NEXT_PUBLIC_GRAFANA_URL?: string;
   ENABLE_SSL?: boolean;
   SSL_CERT_PATH?: string;
   SSL_KEY_PATH?: string;

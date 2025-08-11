@@ -1,7 +1,7 @@
 import React from 'react';
 import { DashboardConfig, NodeConfig, ValidationError } from '../../types';
 import { FileUpload } from '../FileUpload';
-import { AlertCircle, Package, Cpu, Globe, BarChart2 } from 'lucide-react';
+import { AlertCircle, Package, Cpu, Globe, BarChart2, Eye, EyeOff, Copy, Check } from 'lucide-react';
 
 // Dynamic Arweave loading to completely avoid SubtleCrypto on module load
 const getArweave = async () => {
@@ -31,11 +31,32 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
 }) => {
   const [bundlerWalletFile, setBundlerWalletFile] = React.useState<File>();
   const [cuWalletFile, setCuWalletFile] = React.useState<File>();
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
   const getError = (field: string) => errors.find(e => e.field === field)?.message;
 
   const handleInputChange = (field: keyof DashboardConfig, value: string | boolean) => {
     onChange({ ...config, [field]: value });
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy password:', err);
+      // Fallback for HTTP contexts
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
 
@@ -545,15 +566,15 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
             <div className="flex items-center space-x-3 mb-4">
               <input
                 type="checkbox"
-                id="enableDashboard" disabled
+                id="enableDashboard"
                 checked={config.ENABLE_DASHBOARD}
                 onChange={(e) => handleInputChange('ENABLE_DASHBOARD', e.target.checked)}
-                className="w-4 h-4 text-gray-400 bg-gray-200 border-gray-300 rounded cursor-not-allowed"
+                className="w-4 h-4 text-black bg-white border-gray-300 rounded focus:ring-black focus:ring-2"
               />
               <div className="flex items-center space-x-2">
                 <Globe className="w-5 h-5 text-gray-600" />
-                <label htmlFor="enableDashboard" className="text-lg font-medium text-gray-400">
-                  Admin Dashboard (Coming Soon)
+                <label htmlFor="enableDashboard" className="text-lg font-medium text-black">
+                  Admin Dashboard
                 </label>
               </div>
             </div>
@@ -587,7 +608,7 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
                     className={`w-full px-3 py-2 border rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
                       getError('DASHBOARD_PORT') ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'
                     }`}
-                    placeholder="8080"
+                    placeholder="3001"
                     min="1024"
                     max="65535"
                   />
@@ -619,37 +640,139 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
                 <label className="block text-sm font-medium text-black mb-2">
                   Admin Password
                 </label>
-                <div className="flex space-x-3">
-                  <input
-                    type="password"
-                    value={config.ADMIN_PASSWORD}
-                    onChange={(e) => handleInputChange('ADMIN_PASSWORD', e.target.value)}
-                    className={`flex-1 px-3 py-2 border rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
-                      getError('ADMIN_PASSWORD') ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'
-                    }`}
-                    placeholder="Enter secure admin password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-                      let password = '';
-                      for (let i = 0; i < 16; i++) {
-                        password += chars.charAt(Math.floor(Math.random() * chars.length));
-                      }
-                      handleInputChange('ADMIN_PASSWORD', password);
-                    }}
-                    className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-                  >
-                    Generate
-                  </button>
+                <div className="relative">
+                  <div className="flex space-x-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={config.ADMIN_PASSWORD}
+                        onChange={(e) => handleInputChange('ADMIN_PASSWORD', e.target.value)}
+                        className={`w-full px-3 py-2 pr-10 border rounded-lg text-black placeholder-gray-400 focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
+                          getError('ADMIN_PASSWORD') ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'
+                        }`}
+                        placeholder="Enter secure admin password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                        title={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    {config.ADMIN_PASSWORD && (
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(config.ADMIN_PASSWORD)}
+                        className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-1"
+                        title="Copy password to clipboard"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-green-600">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            <span className="text-sm">Copy</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+                        let password = '';
+                        for (let i = 0; i < 16; i++) {
+                          password += chars.charAt(Math.floor(Math.random() * chars.length));
+                        }
+                        handleInputChange('ADMIN_PASSWORD', password);
+                      }}
+                      className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                    >
+                      Generate
+                    </button>
+                  </div>
                 </div>
                 {getError('ADMIN_PASSWORD') && (
                   <p className="mt-1 text-sm text-red-600">{getError('ADMIN_PASSWORD')}</p>
                 )}
                 <p className="mt-1 text-sm text-gray-500">
-                  Strong password recommended for security
+                  Strong password recommended for security. Use the copy button to securely save your password.
                 </p>
+              </div>
+
+              {/* Advanced Dashboard Configuration */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-black mb-3">Advanced Configuration</h4>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-black mb-2">NextAuth Secret</label>
+                      <input
+                        type="password"
+                        value={config.NEXTAUTH_SECRET || ''}
+                        onChange={(e) => handleInputChange('NEXTAUTH_SECRET', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                        placeholder="your-secret-key"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Secret key for NextAuth authentication</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-black mb-2">NextAuth URL</label>
+                      <input
+                        type="url"
+                        value={config.NEXTAUTH_URL || ''}
+                        onChange={(e) => handleInputChange('NEXTAUTH_URL', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                        placeholder="http://localhost:3001"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Base URL for NextAuth callbacks</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-black mb-2">AR.IO Node Path</label>
+                      <input
+                        type="text"
+                        value={config.AR_IO_NODE_PATH || ''}
+                        onChange={(e) => handleInputChange('AR_IO_NODE_PATH', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                        placeholder="/tmp/ar-io-node"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Path to AR.IO node directory</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-black mb-2">Docker Project</label>
+                      <input
+                        type="text"
+                        value={config.DOCKER_PROJECT || ''}
+                        onChange={(e) => handleInputChange('DOCKER_PROJECT', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                        placeholder="ar-io-node"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Docker Compose project name</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">Grafana URL</label>
+                    <input
+                      type="url"
+                      value={config.NEXT_PUBLIC_GRAFANA_URL || ''}
+                      onChange={(e) => handleInputChange('NEXT_PUBLIC_GRAFANA_URL', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                      placeholder="http://localhost:1024"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">URL for Grafana dashboard integration</p>
+                  </div>
+                </div>
               </div>
 
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">

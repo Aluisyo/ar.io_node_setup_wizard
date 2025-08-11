@@ -220,7 +220,15 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
       });
     }
     
-    // Additional raw env lines
+// Additional raw env lines
+    if (config.nodeConfig.ADDITIONAL_ENV) {
+      // Header comment for additional variables
+      lines.push('');
+      lines.push('# Additional Environment Variables');
+      config.nodeConfig.ADDITIONAL_ENV.split('\n').forEach(line => {
+        if (line.trim()) lines.push(line);
+      });
+    }
     if (config.nodeConfig.ADDITIONAL_ENV) {
       config.nodeConfig.ADDITIONAL_ENV.split('\n').forEach(line => {
         if (line.trim()) lines.push(line);

@@ -30,8 +30,27 @@ export const NodeConfigStep: React.FC<NodeConfigStepProps> = ({
   onDashboardChange,
   errors,
 }) => {
-  const [showAdvanced, setShowAdvanced] = React.useState(false);
+const [showAdvanced, setShowAdvanced] = React.useState(false);
   const [showApiKey, setShowApiKey] = React.useState(false);
+  
+  // Additional environment variables as key/value pairs
+  const [additionalEnvList, setAdditionalEnvList] = React.useState<{ key: string; value: string }[]>([]);
+
+  // Initialize list from config.ADDITIONAL_ENV
+  React.useEffect(() => {
+    const lines = (config.ADDITIONAL_ENV || '').split('\n').filter(l => l.trim());
+    const list = lines.map(line => {
+      const [key, ...vals] = line.split('=');
+      return { key, value: vals.join('=') };
+    });
+    setAdditionalEnvList(list);
+  }, [config.ADDITIONAL_ENV]);
+
+  // Update config.ADDITIONAL_ENV when list changes
+  React.useEffect(() => {
+    const envString = additionalEnvList.map(({ key, value }) => `${key}=${value}`).join('\n');
+    onChange({ ...config, ADDITIONAL_ENV: envString });
+  }, [additionalEnvList, config, onChange]);
 
   const getError = (field: string) => errors.find(e => e.field === field)?.message;
 
@@ -96,6 +115,16 @@ export const NodeConfigStep: React.FC<NodeConfigStepProps> = ({
       onDashboardChange({ ...dashboardConfig, ADMIN_API_KEY: config.ADMIN_API_KEY });
     }
   }, [config.ADMIN_API_KEY, dashboardConfig.ADMIN_API_KEY, onDashboardChange]);
+
+  const formatJsonField = (field: keyof NodeConfig) => {
+    try {
+      const value = config[field] || '';
+      const parsed = JSON.parse(value);
+      handleInputChange(field, JSON.stringify(parsed, null, 2));
+    } catch (error) {
+      alert('Invalid JSON: ' + (error as Error).message);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -638,8 +667,8 @@ export const NodeConfigStep: React.FC<NodeConfigStepProps> = ({
               </label>
               <textarea
                 value={config.ANS104_UNBUNDLE_FILTER || ''}
-                onChange={(e) => handleInputChange('ANS104_UNBUNDLE_FILTER', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                onChange={(e) => handleInputChange('ANS104_UNBUNDLE_FILTER', e.target.value)} onBlur={() => formatJsonField('ANS104_UNBUNDLE_FILTER')}
+className="w-full font-mono px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
                 rows={3}
                 placeholder='{"never": true}'
               />
@@ -654,8 +683,8 @@ export const NodeConfigStep: React.FC<NodeConfigStepProps> = ({
               </label>
               <textarea
                 value={config.ANS104_INDEX_FILTER || ''}
-                onChange={(e) => handleInputChange('ANS104_INDEX_FILTER', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                onChange={(e) => handleInputChange('ANS104_INDEX_FILTER', e.target.value)} onBlur={() => formatJsonField('ANS104_INDEX_FILTER')}
+className="w-full font-mono px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
                 rows={3}
                 placeholder='{"never": true}'
               />
@@ -803,8 +832,63 @@ export const NodeConfigStep: React.FC<NodeConfigStepProps> = ({
                   value={config.MEMPOOL_POLLING_INTERVAL_MS || ''}
                   onChange={(e) => handleInputChange('MEMPOOL_POLLING_INTERVAL_MS', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
-                  placeholder="30000"
-                />
+placeholder="30000" />
+              </div>
+              
+              {/* Additional Environment Variables */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-black mb-2">
+                  Additional Environment Variables
+                </label>
+                <div className="space-y-2">
+                  {additionalEnvList.map((env, i) => (
+                    <div key={i} className="grid grid-cols-2 gap-2 items-center">
+                      <input
+                        type="text"
+                        value={env.key}
+                        onChange={e => {
+                          const newList = [...additionalEnvList];
+                          newList[i].key = e.target.value;
+                          setAdditionalEnvList(newList);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                        placeholder="Environment variable key"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={env.value}
+                          onChange={e => {
+                            const newList = [...additionalEnvList];
+                            newList[i].value = e.target.value;
+                            setAdditionalEnvList(newList);
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                          placeholder="Environment variable value"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdditionalEnvList(additionalEnvList.filter((_, j) => j !== i));
+                          }}
+                          className="px-3 py-2 text-red-600 hover:text-red-800 font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setAdditionalEnvList([...additionalEnvList, { key: '', value: '' }])}
+                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    + Add Environment Variable
+                  </button>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Additional environment variables for your AR.IO node configuration
+                  </p>
+                </div>
               </div>
             </div>
           </div>
