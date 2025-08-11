@@ -49,8 +49,10 @@ const [showAdvanced, setShowAdvanced] = React.useState(false);
   // Update config.ADDITIONAL_ENV when list changes
   React.useEffect(() => {
     const envString = additionalEnvList.map(({ key, value }) => `${key}=${value}`).join('\n');
-    onChange({ ...config, ADDITIONAL_ENV: envString });
-  }, [additionalEnvList, config, onChange]);
+    if (envString !== config.ADDITIONAL_ENV) {
+      onChange({ ...config, ADDITIONAL_ENV: envString });
+    }
+  }, [additionalEnvList, config.ADDITIONAL_ENV, onChange]);
 
   const getError = (field: string) => errors.find(e => e.field === field)?.message;
 
@@ -61,10 +63,21 @@ const [showAdvanced, setShowAdvanced] = React.useState(false);
 
 
   const handleObserverWalletFileSelect = (file: File) => {
+    console.log('handleObserverWalletFileSelect called with file:', file.name);
+    
+    // Immediately update the file in state
+    onChange({
+      ...config,
+      observerWalletFile: file,
+    });
+    
+    // Then process the file for wallet data
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        console.log('FileReader onload triggered');
         const walletData = JSON.parse(e.target?.result as string);
+        console.log('Wallet data parsed successfully');
         
         let address = '';
         try {
@@ -72,6 +85,7 @@ const [showAdvanced, setShowAdvanced] = React.useState(false);
           const arweaveInstance = await getArweave();
           if (arweaveInstance) {
             address = await arweaveInstance.wallets.jwkToAddress(walletData as any);
+            console.log('Address derived:', address);
           } else {
             console.warn('Arweave not available. Address derivation skipped.');
           }
@@ -82,12 +96,14 @@ const [showAdvanced, setShowAdvanced] = React.useState(false);
           address = '';
         }
         
-        onChange({
-          ...config,
-          observerWalletFile: file,
+        console.log('Updating config with wallet data');
+        onChange(prevConfig => ({
+          ...prevConfig,
+          observerWalletFile: file, // Ensure file is still there
           OBSERVER_WALLET: address,
           OBSERVER_JWK: JSON.stringify(walletData),
-        });
+        }));
+        console.log('Config updated successfully');
       } catch (error) {
         console.error('Invalid observer wallet file:', error);
       }
@@ -115,6 +131,11 @@ const [showAdvanced, setShowAdvanced] = React.useState(false);
       onDashboardChange({ ...dashboardConfig, ADMIN_API_KEY: config.ADMIN_API_KEY });
     }
   }, [config.ADMIN_API_KEY, dashboardConfig.ADMIN_API_KEY, onDashboardChange]);
+  
+  // Debug logging to check observer wallet file state
+  React.useEffect(() => {
+    console.log('NodeConfigStep config.observerWalletFile:', config.observerWalletFile);
+  }, [config.observerWalletFile]);
 
   const formatJsonField = (field: keyof NodeConfig) => {
     try {

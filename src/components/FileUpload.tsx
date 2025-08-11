@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, DragEvent } from 'react';
 import { Upload, File, X } from 'lucide-react';
 
 interface FileUploadProps {
@@ -21,6 +21,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   error,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  
+  // Debug logging to check selectedFile prop
+  React.useEffect(() => {
+    console.log('FileUpload selectedFile prop:', selectedFile);
+  }, [selectedFile]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -42,6 +48,65 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     }
   };
 
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Keep drag state active
+    if (!isDragOver) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Only set drag over to false if we're actually leaving the drop zone
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (
+      x < rect.left ||
+      x >= rect.right ||
+      y < rect.top ||
+      y >= rect.bottom
+    ) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    const files = e.dataTransfer?.files;
+    
+    if (files && files.length > 0) {
+      const file = files[0];
+      
+      // Validate file type if accept prop is provided
+      if (accept && !accept.includes('*')) {
+        const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+        const acceptableExtensions = accept.split(',').map(ext => ext.trim().toLowerCase());
+        
+        if (!acceptableExtensions.includes(fileExtension)) {
+          console.warn(`File type not accepted. Expected: ${accept}, got: ${fileExtension}`);
+          return;
+        }
+      }
+      
+      onFileSelect(file);
+    }
+  };
+
   return (
     <div>
       <label className="block text-sm font-semibold text-gray-900 mb-3">{label}</label>
@@ -51,10 +116,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       
       <div
         onClick={handleClick}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={`relative border-2 border-dashed rounded-lg p-8 cursor-pointer transition-all duration-200 ${
           error 
             ? 'border-red-300 bg-red-50 hover:border-red-400' 
-            : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
+            : isDragOver
+              ? 'border-indigo-400 bg-indigo-50 border-2'
+              : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
         }`}
       >
         <input
