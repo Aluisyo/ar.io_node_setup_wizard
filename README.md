@@ -20,9 +20,9 @@ npm run build
 node server/index.js
 ```
 
-### Option 2: One-Line Docker Run (Coming Soon)
+### Option 2: One-Line Docker Run
 ```bash
-docker run -p 5001:5001 -v /var/run/docker.sock:/var/run/docker.sock aluisyo/ar.io_node_setup_wizard:latest
+docker run -p 5001:5001 -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp aluisyo/ar.io_node_setup_wizard:latest
 ```
 
 ## 🌐 Access the Wizard
