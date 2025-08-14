@@ -23,10 +23,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   
-  // Debug logging to check selectedFile prop
-  React.useEffect(() => {
-    console.log('FileUpload selectedFile prop:', selectedFile);
-  }, [selectedFile]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -98,7 +94,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         const acceptableExtensions = accept.split(',').map(ext => ext.trim().toLowerCase());
         
         if (!acceptableExtensions.includes(fileExtension)) {
-          console.warn(`File type not accepted. Expected: ${accept}, got: ${fileExtension}`);
           return;
         }
       }

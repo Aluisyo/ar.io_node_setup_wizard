@@ -88,7 +88,6 @@ export const DeploymentStepComponent: React.FC<DeploymentStepProps> = ({
         pollingIntervalRef.current = null;
       }
     } catch (err) {
-      console.error('Cancel deployment error:', err);
       // Still mark as cancelled even if the API call failed
       setDeploymentCancelled(true);
       setDeploymentError('Deployment cancelled by user');

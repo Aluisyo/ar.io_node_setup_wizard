@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { WizardStep, NodeConfig, DashboardConfig, DeploymentConfig, ValidationError } from '../types';
 
-// Helper functions for localStorage persistence
+
+const getDefaultNodePath = (): string => {
+  
+  return '~/ar-io-node';
+};
+
 const saveToStorage = (key: string, value: any) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
-    console.warn('Failed to save to localStorage:', e);
+    // Failed to save to localStorage - continue silently
   }
 };
 
@@ -15,13 +20,12 @@ const loadFromStorage = <T>(key: string, defaultValue: T): T => {
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
   } catch (e) {
-    console.warn('Failed to load from localStorage:', e);
+    // Failed to load from localStorage - use default
     return defaultValue;
   }
 };
 
 export const useWizard = () => {
-  // Load initial state from localStorage or use defaults
   const [currentStep, setCurrentStep] = useState<WizardStep>(() => 
     loadFromStorage('wizard-current-step', 'welcome')
   );
@@ -35,19 +39,14 @@ export const useWizard = () => {
       GRAPHQL_PORT: '443',
       // ArNS configuration
       ARNS_ROOT_HOST: '',
-      // Blockchain sync settings
       START_HEIGHT: '1000000',
       STOP_HEIGHT: '',
-      // ANS-104 Bundle processing
       ANS104_UNBUNDLE_FILTER: '{"never": true}',
       ANS104_INDEX_FILTER: '{"never": true}',
-      // Webhook configuration
       WEBHOOK_TARGET_SERVERS: '',
       WEBHOOK_INDEX_FILTER: '{"never": true}',
       WEBHOOK_BLOCK_FILTER: '{"never": true}',
-      // Logging
       LOG_FILTER: 'ar:*',
-      // Advanced settings
       TRUSTED_ARWEAVE_URL: 'https://arweave.net',
       TRUSTED_NODE_URL: 'https://arweave.net',
       TRUSTED_GATEWAY_URL: 'https://arweave.net',
@@ -58,18 +57,14 @@ export const useWizard = () => {
       SIMULATED_REQUEST_FAILURE_RATE: '0',
       FILTER_CHANGE_REPROCESS: false,
       SANDBOX_PROTOCOL: 'https',
-      // Additional official AR.IO node settings
       START_WRITERS: true,
       RUN_OBSERVER: true,
       ENABLE_MEMPOOL_WATCHER: true,
       MEMPOOL_POLLING_INTERVAL_MS: '30000',
       BACKFILL_BUNDLE_RECORDS: false,
       RUN_AUTOHEAL: true,
-      // Node.js optimization
       NODE_MAX_OLD_SPACE_SIZE: '8192',
-      // Core AR.IO node ports (from official .env.example)
       CORE_PORT: '4000',
-      // Chain cache configuration (core node settings)
       CHAIN_CACHE_TYPE: 'redis',
       REDIS_CACHE_URL: 'redis://redis:6379',
       REDIS_USE_TLS: false,
@@ -92,13 +87,11 @@ export const useWizard = () => {
       ADMIN_PASSWORD: 'admin',
       NEXTAUTH_SECRET: 'your-secret-key',
       NEXTAUTH_URL: 'http://localhost:3001',
-      AR_IO_NODE_PATH: '/tmp/ar-io-node',
+      AR_IO_NODE_PATH: getDefaultNodePath(),
       DOCKER_PROJECT: 'ar-io-node',
       NEXT_PUBLIC_GRAFANA_URL: 'http://localhost:1024',
-      // AO CU endpoints
       GATEWAY_URL: 'http://envoy:3000',
       UPLOADER_URL: 'http://envoy:3000/bundler',
-      // Bundler defaults
       APP_NAME: 'AR.IO Bundler Service',
       ANS104_INDEX_FILTER: '{"always": true}',
       ANS104_UNBUNDLE_FILTER: '{"attributes": {"owner_address": "$BUNDLER_ARWEAVE_ADDRESS"}}',
@@ -109,30 +102,24 @@ export const useWizard = () => {
       AWS_REGION: 'us-east-1',
       AWS_ENDPOINT: 'http://localstack:4566',
       ALLOW_LISTED_ADDRESSES: '',
-      // AO CU defaults
       PROCESS_CHECKPOINT_TRUSTED_OWNERS: 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY',
       ADDITIONAL_AO_CU_ENV: '',
-      // SSL defaults
       ENABLE_SSL: false,
       SSL_CERT_PATH: '',
       SSL_KEY_PATH: '',
-      // Advanced services
       ENABLE_CLICKHOUSE: false,
       ENABLE_LITESTREAM: false,
       ENABLE_AUTOHEAL: false,
-      // ClickHouse configuration
       CLICKHOUSE_PORT: '9000',
       CLICKHOUSE_PORT_2: '8123',
       CLICKHOUSE_PORT_3: '8443',
       CLICKHOUSE_USER: '',
       CLICKHOUSE_PASSWORD: '',
-      // Litestream configuration
       AR_IO_SQLITE_BACKUP_S3_BUCKET_NAME: '',
       AR_IO_SQLITE_BACKUP_S3_BUCKET_REGION: '',
       AR_IO_SQLITE_BACKUP_S3_BUCKET_ACCESS_KEY: '',
       AR_IO_SQLITE_BACKUP_S3_BUCKET_SECRET_KEY: '',
       AR_IO_SQLITE_BACKUP_S3_BUCKET_PREFIX: '',
-      // Redis configuration
       REDIS_MAX_MEMORY: '256mb',
       EXTRA_REDIS_FLAGS: '--save "" --appendonly no',
     })
@@ -347,7 +334,7 @@ export const useWizard = () => {
       ADMIN_PASSWORD: 'admin',
       NEXTAUTH_SECRET: 'your-secret-key',
       NEXTAUTH_URL: 'http://localhost:3001',
-      AR_IO_NODE_PATH: '/tmp/ar-io-node',
+      AR_IO_NODE_PATH: getDefaultNodePath(),
       DOCKER_PROJECT: 'ar-io-node',
       NEXT_PUBLIC_GRAFANA_URL: 'http://localhost:1024',
       GATEWAY_URL: 'http://envoy:3000',

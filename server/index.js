@@ -6,40 +6,27 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Arweave from 'arweave';
 
-// ESM __dirname polyfill
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// In-memory log storage
 let deploymentLogs = [];
-
-// Track current deployment process for cancellation
 let currentDeploymentProcess = null;
 let deploymentCancelled = false;
-
-// Helper function to fix port mappings in Docker Compose files
 function fixPortMappings(composeContent) {
   let fixed = composeContent;
   
-  // Fix Envoy port mapping to use ENVOY_PORT environment variable
   fixed = fixed.replace(
     /ports:\s*\n\s*-\s*["']?\d+:3000["']?/g,
     'ports:\n      - "${ENVOY_PORT:-3000}:3000"'
   );
-  
-  // Fix Core port mapping to use CORE_PORT environment variable  
   fixed = fixed.replace(
     /ports:\s*\n\s*-\s*["']?\d+:4000["']?/g,
     'ports:\n      - "${CORE_PORT:-4000}:4000"'
   );
-  
-  // Fix Observer port mapping to use OBSERVER_PORT environment variable
   fixed = fixed.replace(
     /ports:\s*\n\s*-\s*["']?\d+:5050["']?/g,
     'ports:\n      - "${OBSERVER_PORT:-5050}:5050"'
   );
-  
-  // Fix ClickHouse port mappings
   fixed = fixed.replace(
     /ports:\s*\n\s*-\s*["']?\d+:8123["']?/g,
     'ports:\n      - "${CLICKHOUSE_PORT_2:-8123}:8123"'
@@ -53,7 +40,6 @@ function fixPortMappings(composeContent) {
     'ports:\n      - "${CLICKHOUSE_PORT:-9000}:9000"'
   );
   
-  // Also handle single-line port mappings with defaults
   fixed = fixed.replace(/["']?\d+:3000["']?/g, '"${ENVOY_PORT:-3000}:3000"');
   fixed = fixed.replace(/["']?\d+:4000["']?/g, '"${CORE_PORT:-4000}:4000"');
   fixed = fixed.replace(/["']?\d+:5050["']?/g, '"${OBSERVER_PORT:-5050}:5050"');
@@ -75,9 +61,12 @@ const execPromise = promisify(cpExec);
 
 const app = express();
 
-// Request logging for debugging
+// Basic request logging
 app.use((req, res, next) => {
-  console.log(`[REQ] ${req.method} ${req.url}`);
+  // Only log non-static requests to reduce noise
+  if (!req.url.startsWith('/assets/') && !req.url.includes('.')) {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  }
   next();
 });
 app.use(express.json({ limit: '1mb' }));
@@ -128,7 +117,13 @@ app.post('/deploy', async (req, res) => {
     
     // Prepare deployment directory (no cleanup - we'll update existing repo)
     const envContent = buildEnvFile(config);
-    const deployDir = '/tmp/ar-io-node';
+    // Use home directory by default for better permissions and persistence
+    let deployDir = config.dashboardConfig.AR_IO_NODE_PATH || `${process.env.HOME}/ar-io-node`;
+    
+    // Expand tilde to home directory if needed
+    if (deployDir.startsWith('~/')) {
+      deployDir = deployDir.replace('~', process.env.HOME);
+    }
     
     appendLog(`Using deployment directory: ${deployDir}`);
     appendLog('Repository will be updated if it exists, or cloned if it does not exist');
@@ -153,7 +148,6 @@ app.post('/deploy', async (req, res) => {
     if (repoExists) {
       appendLog(`Repository exists, updating to latest version (${latestTag})...`);
       
-      // Clean any local changes and update to latest tag
       const updateProcess = spawn('bash', ['-c', `cd "${deployDir}" && git fetch --tags && git reset --hard && git checkout ${latestTag} && git pull origin ${latestTag}`], { stdio: 'pipe' });
       
       await new Promise((resolve, reject) => {
@@ -171,7 +165,6 @@ app.post('/deploy', async (req, res) => {
           } else {
             appendLog(`Git update failed with code ${code}: ${output}`);
             appendLog('Falling back to fresh clone...');
-            // If update fails, we'll fall through to clone logic
             resolve();
           }
         });
@@ -214,68 +207,8 @@ app.post('/deploy', async (req, res) => {
     // Repository cloned directly to deployment directory
     appendLog('Setting up deployment directory...');
     
-    // Fix ownership and permissions to prevent "dubious ownership" errors
-    try {
-      appendLog('Fixing directory ownership and permissions...');
-      
-      // Fix ownership of the directory to current user
-      const userId = process.getuid?.() || 'unknown';
-      if (userId !== 'unknown') {
-        const { spawn } = require('child_process');
-        await new Promise((resolve, reject) => {
-          const chownProcess = spawn('chown', ['-R', userId.toString(), deployDir], { stdio: 'pipe' });
-          chownProcess.on('close', (code) => {
-            if (code === 0) {
-              appendLog('Directory ownership fixed');
-            } else {
-              appendLog(`Warning: Could not fix ownership (code ${code}) - continuing anyway`);
-            }
-            resolve();
-          });
-          chownProcess.on('error', (err) => {
-            appendLog(`Warning: Could not fix ownership (${err.message}) - continuing anyway`);
-            resolve();
-          });
-        });
-      }
-      
-      // Fix write permissions
-      await new Promise((resolve, reject) => {
-        const chmodProcess = spawn('chmod', ['-R', 'u+w', deployDir], { stdio: 'pipe' });
-        chmodProcess.on('close', (code) => {
-          if (code === 0) {
-            appendLog('Directory permissions fixed');
-          } else {
-            appendLog(`Warning: Could not fix permissions (code ${code}) - continuing anyway`);
-          }
-          resolve();
-        });
-        chmodProcess.on('error', (err) => {
-          appendLog(`Warning: Could not fix permissions (${err.message}) - continuing anyway`);
-          resolve();
-        });
-      });
-      
-      // Add git safe directory to prevent "dubious ownership" errors
-      await new Promise((resolve) => {
-        const gitConfigProcess = spawn('git', ['config', '--global', '--add', 'safe.directory', deployDir], { stdio: 'pipe' });
-        gitConfigProcess.on('close', (code) => {
-          if (code === 0) {
-            appendLog('Git safe directory configured');
-          } else {
-            appendLog(`Warning: Could not configure git safe directory (code ${code}) - continuing anyway`);
-          }
-          resolve();
-        });
-        gitConfigProcess.on('error', (err) => {
-          appendLog(`Warning: Could not configure git safe directory (${err.message}) - continuing anyway`);
-          resolve();
-        });
-      });
-      
-    } catch (error) {
-      appendLog(`Warning: Error fixing permissions - ${error.message} - continuing anyway`);
-    }
+    // Note: No permission fixing needed when deploying to user's home folder
+    // Files are automatically owned by the current user with proper permissions
     
     // Fetch admin dashboard files if dashboard is enabled
     if (config.dockerConfig.enableDashboard) {
@@ -312,7 +245,7 @@ app.post('/deploy', async (req, res) => {
           `ADMIN_PASSWORD=${config.dashboardConfig.ADMIN_PASSWORD}`,
           `NEXTAUTH_SECRET=${config.dashboardConfig.NEXTAUTH_SECRET || 'your-admin-api-key'}`,
           `NEXTAUTH_URL=${config.dashboardConfig.NEXTAUTH_URL || `http://localhost:${config.dashboardConfig.DASHBOARD_PORT}`}`,
-          `AR_IO_NODE_PATH=${config.dashboardConfig.AR_IO_NODE_PATH || deployDir}`,
+          `AR_IO_NODE_PATH=${deployDir}`,
           `DOCKER_PROJECT=${config.dashboardConfig.DOCKER_PROJECT || 'ar-io-node'}`,
           `NEXT_PUBLIC_GRAFANA_URL=${config.dashboardConfig.NEXT_PUBLIC_GRAFANA_URL || `http://localhost:${config.dashboardConfig.GRAFANA_PORT}`}`,
           `ADMIN_API_KEY=${config.nodeConfig.ADMIN_API_KEY}`
@@ -833,7 +766,6 @@ services:
 
     return res.json({ status: 'started' });
   } catch (err) {
-    console.error('DEBUG: Deployment error caught:', err);
     appendLog(`Deployment error: ${err.message}`);
     return res.status(500).json({ error: err.message });
   }
@@ -905,7 +837,7 @@ app.get('/debug', (_, res) => {
           addTest('DOM Manipulation', false, 'Error: ' + error.message);
         }
         
-        console.log('Debug page loaded successfully');
+        // Debug page loaded
       </script>
     </body>
     </html>
@@ -945,9 +877,10 @@ app.post('/cancel', (_, res) => {
         appendLog(`Warning: Could not kill process: ${killErr.message}`);
       }
       
-      // Also try to stop the containers
+      // Also try to stop the containers - use deployDir from current config or default
+      const deployDir = `${process.env.HOME}/ar-io-node`; // Default home folder path
       const stopProcess = spawn('docker', ['compose', '-p', 'ar-io-node', 'down'], {
-        cwd: '/tmp/ar-io-node'
+        cwd: deployDir
       });
       
       stopProcess.stdout.on('data', (d) => appendLog(`Docker down: ${d.toString().trim()}`));
@@ -1270,7 +1203,6 @@ app.use((req, res, next) => {
     // Add error handling for file serving
     res.sendFile(indexPath, (err) => {
       if (err) {
-        console.error('Error serving index.html:', err);
         res.status(500).send(`
           <!DOCTYPE html>
           <html>
@@ -1294,12 +1226,11 @@ app.use((req, res, next) => {
 });
 
 const PORT = 5001;
-const HTTPS_PORT = 5443;
 
 // HTTP Server
-console.log('🚀 Starting AR.IO Gateway Node Setup Wizard...');
-console.log('📂 Working directory:', process.cwd());
-console.log('🌐 Binding to all interfaces (0.0.0.0)...');
+console.log('🚀 Starting AR.IO Gateway Node Setup Wizard');
+console.log(`📂 Working directory: ${process.cwd()}`);
+console.log('🌐 Binding to all interfaces (0.0.0.0)');
 
 // Add error handling for unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
@@ -1313,7 +1244,7 @@ process.on('uncaughtException', (error) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server ready at http://0.0.0.0:${PORT}`);
   console.log(`📱 Access from network: http://YOUR_IP:${PORT}`);
-  console.log('🔄 Waiting for requests... (Press Ctrl+C to stop)');
+  console.log('🔄 Ready for requests');
 });
 
 

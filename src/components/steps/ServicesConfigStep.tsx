@@ -10,7 +10,6 @@ const getArweave = async () => {
     const Arweave = (await import('arweave')).default;
     return Arweave.init({});
   } catch (error) {
-    console.warn('Arweave not available:', error);
     return null;
   }
 };
@@ -47,7 +46,6 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy password:', err);
       // Fallback for HTTP contexts
       const textArea = document.createElement('textarea');
       textArea.value = text;
@@ -74,13 +72,9 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
           const arweaveInstance = await getArweave();
           if (arweaveInstance) {
             address = await arweaveInstance.wallets.jwkToAddress(walletData as any);
-          } else {
-            console.warn('Arweave not available. Address derivation skipped.');
           }
         } catch (cryptoError) {
-          console.warn('SubtleCrypto not available (HTTP context). Address derivation skipped.');
-          // In HTTP context, we'll skip address derivation
-          // User can manually enter the address if needed
+          // SubtleCrypto not available - skip address derivation
           address = '';
         }
         
@@ -91,7 +85,7 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
           BUNDLER_ARWEAVE_ADDRESS: address
         });
       } catch (error) {
-        console.error('Invalid bundler wallet file:', error);
+        // Invalid wallet file - silently ignore
       }
     };
     reader.readAsText(file);
@@ -108,7 +102,7 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
           CU_WALLET: JSON.stringify(walletData) 
         });
       } catch (error) {
-        console.error('Invalid CU wallet file:', error);
+        // Invalid wallet file - silently ignore
       }
     };
     reader.readAsText(file);
@@ -741,7 +735,7 @@ export const ServicesConfigStep: React.FC<ServicesConfigStepProps> = ({
                         value={config.AR_IO_NODE_PATH || ''}
                         onChange={(e) => handleInputChange('AR_IO_NODE_PATH', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder="/tmp/ar-io-node"
+                        placeholder="~/ar-io-node"
                       />
                       <p className="mt-1 text-xs text-gray-500">Path to AR.IO node directory</p>
                     </div>

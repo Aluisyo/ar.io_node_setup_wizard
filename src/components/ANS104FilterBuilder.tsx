@@ -38,13 +38,6 @@ interface ANS104FilterBuilderProps {
   placeholder?: string;
 }
 
-const COMMON_FIELDS = [
-  { value: 'never', label: 'Never Process', type: 'boolean' },
-  { value: 'always', label: 'Always Process', type: 'boolean' },
-  { value: 'owners', label: 'Owner Addresses', type: 'array' },
-  { value: 'targets', label: 'Target Addresses', type: 'array' },
-];
-
 const TAG_FIELDS = [
   'Content-Type',
   'App-Name', 
@@ -61,15 +54,6 @@ const TAG_FIELDS = [
   'Entity-Type',
   'Contract',
   'Input',
-];
-
-const OPERATORS = [
-  { value: 'equals', label: 'Equals' },
-  { value: 'contains', label: 'Contains' },
-  { value: 'starts_with', label: 'Starts With' },
-  { value: 'ends_with', label: 'Ends With' },
-  { value: 'in', label: 'In Array' },
-  { value: 'not_in', label: 'Not In Array' },
 ];
 
 export const ANS104FilterBuilder: React.FC<ANS104FilterBuilderProps> = ({
