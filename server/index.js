@@ -930,9 +930,16 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
       value = String(value);
     }
     
-    // If value contains special characters (quotes, spaces, etc.), wrap in double quotes and escape internal quotes
-    if (value.includes('"') || value.includes("'") || value.includes(' ') || value.includes('\n') || value.includes('$')) {
-      // Escape any existing double quotes in the value
+    // Check if this looks like a JSON object (starts with { and ends with })
+    const trimmed = value.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      // For JSON values, ensure they're on a single line and return as-is (AR.IO format)
+      return value.replace(/\s*\n\s*/g, ' ').trim();
+    }
+    
+    // For non-JSON values, only quote if they contain spaces, newlines, or tabs
+    if (value.includes(' ') || value.includes('\n') || value.includes('\t')) {
+      // Properly escape quotes and return quoted string
       const escaped = value.replace(/"/g, '\\"');
       return `"${escaped}"`;
     }
