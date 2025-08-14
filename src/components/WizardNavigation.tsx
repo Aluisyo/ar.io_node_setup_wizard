@@ -29,10 +29,10 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
       <button
         onClick={onBack}
         disabled={!canGoBack}
-        className={`inline-flex items-center font-semibold rounded-lg transition-all duration-200 shadow-sm touch-manipulation ${
+        className={`inline-flex items-center px-6 py-3 font-semibold rounded-lg transition-all duration-200 shadow-sm touch-manipulation ${
           canGoBack
-            ? 'px-6 py-2 bg-white text-gray-900 border-2 border-gray-900 hover:bg-gray-50'
-            : 'px-8 py-3 bg-gray-300 text-gray-500 cursor-not-allowed'
+            ? 'bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+            : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
         }`}
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -45,7 +45,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
         className={`inline-flex items-center px-8 py-3 font-semibold rounded-lg transition-all duration-200 shadow-sm touch-manipulation ${
           canGoNext
             ? 'bg-gray-900 text-white hover:bg-gray-800'
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
         }`}
       >
         {nextButtonText}

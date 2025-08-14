@@ -37,15 +37,16 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
     
     // Core node configuration (always included)
     const coreNodeConfigs = [
-      'AR_IO_WALLET', 'OBSERVER_WALLET', 'ADMIN_API_KEY', 'GRAPHQL_HOST', 'GRAPHQL_PORT',
+      'AR_IO_WALLET', 'OBSERVER_WALLET', 'ADMIN_API_KEY', 'ADMIN_API_KEY_FILE', 'GRAPHQL_HOST', 'GRAPHQL_PORT',
       'ARNS_ROOT_HOST', 'START_HEIGHT', 'STOP_HEIGHT', 'TRUSTED_ARWEAVE_URL', 'TRUSTED_NODE_URL',
       'TRUSTED_GATEWAY_URL', 'TRUSTED_ARNS_GATEWAY_URL', 'INSTANCE_ID', 'LOG_FORMAT', 'LOG_FILTER',
       'WEBHOOK_TARGET_SERVERS', 'WEBHOOK_INDEX_FILTER', 'WEBHOOK_BLOCK_FILTER',
       'SKIP_CACHE', 'FILTER_CHANGE_REPROCESS', 'SANDBOX_PROTOCOL', 'SIMULATED_REQUEST_FAILURE_RATE',
       'START_WRITERS', 'RUN_OBSERVER', 'ENABLE_MEMPOOL_WATCHER', 'MEMPOOL_POLLING_INTERVAL_MS',
-      'NODE_MAX_OLD_SPACE_SIZE',
-      // Core AR.IO node ports
-      'CORE_PORT',
+      'BACKFILL_BUNDLE_RECORDS',
+      'NODE_MAX_OLD_SPACE_SIZE', 'RUN_AUTOHEAL',
+      // Core AR.IO node ports (from official .env.example)
+      'CORE_PORT', 'ENVOY_PORT', 'OBSERVER_PORT',
       // Chain cache configuration (core node settings)
       'CHAIN_CACHE_TYPE', 'REDIS_CACHE_URL', 'REDIS_USE_TLS', 'REDIS_CACHE_TTL_SECONDS'
     ];
@@ -220,16 +221,36 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
       });
     }
     
-// Additional raw env lines
+    // Feature toggles (enabled services)
+    const featureToggles = [];
+    if (config.dashboardConfig.ENABLE_ENVOY) featureToggles.push('ENABLE_ENVOY=true');
+    if (config.dockerConfig.enableBundler) featureToggles.push('ENABLE_BUNDLER=true');
+    if (config.dockerConfig.enableAoCu) featureToggles.push('ENABLE_AO_CU=true');
+    if (config.dockerConfig.enableGrafana) featureToggles.push('ENABLE_GRAFANA=true');
+    if (config.dashboardConfig.ENABLE_DASHBOARD) featureToggles.push('ENABLE_DASHBOARD=true');
+    if (config.dockerConfig.enableClickhouse) featureToggles.push('ENABLE_CLICKHOUSE=true');
+    if (config.dockerConfig.enableLitestream) featureToggles.push('ENABLE_LITESTREAM=true');
+    if (config.dockerConfig.enableAutoheal) featureToggles.push('ENABLE_AUTOHEAL=true');
+    
+    if (featureToggles.length > 0) {
+      lines.push('');
+      lines.push('# Feature toggles');
+      featureToggles.forEach(toggle => lines.push(toggle));
+    }
+    
+    // Bundler-specific variables (from server deployment)
+    if (config.dockerConfig.enableBundler && config.dashboardConfig.BUNDLER_ARWEAVE_ADDRESS) {
+      if (!seen.has('BUNDLER_ARWEAVE_ADDRESS')) {
+        lines.push(`BUNDLER_ARWEAVE_ADDRESS=${config.dashboardConfig.BUNDLER_ARWEAVE_ADDRESS}`);
+        seen.add('BUNDLER_ARWEAVE_ADDRESS');
+      }
+    }
+
+    // Additional raw env lines
     if (config.nodeConfig.ADDITIONAL_ENV) {
       // Header comment for additional variables
       lines.push('');
       lines.push('# Additional Environment Variables');
-      config.nodeConfig.ADDITIONAL_ENV.split('\n').forEach(line => {
-        if (line.trim()) lines.push(line);
-      });
-    }
-    if (config.nodeConfig.ADDITIONAL_ENV) {
       config.nodeConfig.ADDITIONAL_ENV.split('\n').forEach(line => {
         if (line.trim()) lines.push(line);
       });
@@ -251,8 +272,22 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ config }) => {
     volumes:
       - ${config.dockerConfig.dataVolume}:/app/data
       - ./wallets:/app/wallets
+    depends_on:
+      - redis
     networks:
       - ${config.dockerConfig.networkName}`];
+
+    // Add Redis service (required by most AR.IO deployments)
+    services.push(`
+  redis:
+    image: redis:7-alpine
+    container_name: ar-io-redis
+    restart: ${config.dockerConfig.restartPolicy}
+    volumes:
+      - redis-data:/data
+    networks:
+      - ${config.dockerConfig.networkName}
+    command: redis-server --maxmemory \${REDIS_MAX_MEMORY:-256mb} --maxmemory-policy allkeys-lru \${EXTRA_REDIS_FLAGS:-}`);
 
     if (config.dockerConfig.useEnvoy) {
       services.push(`
@@ -412,6 +447,8 @@ ${services.join('')}
 
 volumes:
   ${config.dockerConfig.dataVolume}:
+    driver: local
+  redis-data:
     driver: local${config.dockerConfig.enableGrafana ? `
   grafana-data:
     driver: local` : ''}${config.dockerConfig.enableClickhouse ? `
@@ -516,17 +553,16 @@ networks:
               <span className="font-medium text-gray-600">Core Port:</span>
               <span className="text-black">{config.nodeConfig.CORE_PORT}</span>
             </div>
-
             {config.dashboardConfig.ENABLE_DASHBOARD && (
               <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Dashboard:</span>
-                <span className="text-black">Port {config.dashboardConfig.DASHBOARD_PORT}</span>
+                <span className="font-medium text-gray-600">Dashboard Port:</span>
+                <span className="text-black">{config.dashboardConfig.DASHBOARD_PORT}</span>
               </div>
             )}
             {config.nodeConfig.RUN_OBSERVER && config.nodeConfig.OBSERVER_PORT && (
               <div className="flex justify-between">
-                <span className="font-medium text-gray-600">Observer:</span>
-                <span className="text-black">Port {config.nodeConfig.OBSERVER_PORT}</span>
+                <span className="font-medium text-gray-600">Observer Port:</span>
+                <span className="text-black">{config.nodeConfig.OBSERVER_PORT}</span>
               </div>
             )}
           </div>
@@ -679,9 +715,9 @@ networks:
               </code>
             </div>
             {config.dashboardConfig.ENABLE_ENVOY && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Direct Node API:</span>
-                <code className="px-2 py-1 bg-white border border-gray-300 rounded text-sm text-black">
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-600">Direct Node API:</span>
+                <code className="text-black bg-gray-100 px-2 py-1 rounded text-xs">
                   http://localhost:{config.nodeConfig.CORE_PORT}
                 </code>
               </div>
@@ -728,14 +764,14 @@ networks:
             <div className="flex space-x-2">
               <button
                 onClick={() => copyToClipboard(generateEnvFile())}
-                className="inline-flex items-center px-3 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-sm"
+                className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-sm"
               >
                 <Copy className="w-4 h-4 mr-2" />
                 Copy
               </button>
               <button
                 onClick={() => downloadFile(generateEnvFile(), '.env')}
-                className="inline-flex items-center px-3 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-sm"
+                className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-sm"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download
@@ -760,14 +796,14 @@ networks:
             <div className="flex space-x-2">
               <button
                 onClick={() => copyToClipboard(generateDockerCompose())}
-                className="inline-flex items-center px-3 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-sm"
+                className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-sm"
               >
                 <Copy className="w-4 h-4 mr-2" />
                 Copy
               </button>
               <button
                 onClick={() => downloadFile(generateDockerCompose(), 'docker-compose.yml')}
-                className="inline-flex items-center px-3 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-sm"
+                className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all duration-200 shadow-sm"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download

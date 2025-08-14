@@ -214,6 +214,69 @@ app.post('/deploy', async (req, res) => {
     // Repository cloned directly to deployment directory
     appendLog('Setting up deployment directory...');
     
+    // Fix ownership and permissions to prevent "dubious ownership" errors
+    try {
+      appendLog('Fixing directory ownership and permissions...');
+      
+      // Fix ownership of the directory to current user
+      const userId = process.getuid?.() || 'unknown';
+      if (userId !== 'unknown') {
+        const { spawn } = require('child_process');
+        await new Promise((resolve, reject) => {
+          const chownProcess = spawn('chown', ['-R', userId.toString(), deployDir], { stdio: 'pipe' });
+          chownProcess.on('close', (code) => {
+            if (code === 0) {
+              appendLog('Directory ownership fixed');
+            } else {
+              appendLog(`Warning: Could not fix ownership (code ${code}) - continuing anyway`);
+            }
+            resolve();
+          });
+          chownProcess.on('error', (err) => {
+            appendLog(`Warning: Could not fix ownership (${err.message}) - continuing anyway`);
+            resolve();
+          });
+        });
+      }
+      
+      // Fix write permissions
+      await new Promise((resolve, reject) => {
+        const chmodProcess = spawn('chmod', ['-R', 'u+w', deployDir], { stdio: 'pipe' });
+        chmodProcess.on('close', (code) => {
+          if (code === 0) {
+            appendLog('Directory permissions fixed');
+          } else {
+            appendLog(`Warning: Could not fix permissions (code ${code}) - continuing anyway`);
+          }
+          resolve();
+        });
+        chmodProcess.on('error', (err) => {
+          appendLog(`Warning: Could not fix permissions (${err.message}) - continuing anyway`);
+          resolve();
+        });
+      });
+      
+      // Add git safe directory to prevent "dubious ownership" errors
+      await new Promise((resolve) => {
+        const gitConfigProcess = spawn('git', ['config', '--global', '--add', 'safe.directory', deployDir], { stdio: 'pipe' });
+        gitConfigProcess.on('close', (code) => {
+          if (code === 0) {
+            appendLog('Git safe directory configured');
+          } else {
+            appendLog(`Warning: Could not configure git safe directory (code ${code}) - continuing anyway`);
+          }
+          resolve();
+        });
+        gitConfigProcess.on('error', (err) => {
+          appendLog(`Warning: Could not configure git safe directory (${err.message}) - continuing anyway`);
+          resolve();
+        });
+      });
+      
+    } catch (error) {
+      appendLog(`Warning: Error fixing permissions - ${error.message} - continuing anyway`);
+    }
+    
     // Fetch admin dashboard files if dashboard is enabled
     if (config.dockerConfig.enableDashboard) {
       appendLog('Admin dashboard enabled - fetching dashboard files...');
@@ -927,6 +990,22 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     
     return defaultValues[key] !== value;
   };
+  
+  // Helper function to properly format environment variable values
+  const formatEnvValue = (value) => {
+    if (typeof value !== 'string') {
+      value = String(value);
+    }
+    
+    // If value contains special characters (quotes, spaces, etc.), wrap in double quotes and escape internal quotes
+    if (value.includes('"') || value.includes("'") || value.includes(' ') || value.includes('\n') || value.includes('$')) {
+      // Escape any existing double quotes in the value
+      const escaped = value.replace(/"/g, '\\"');
+      return `"${escaped}"`;
+    }
+    
+    return value;
+  };
   // Core node configuration (always included)
   const coreNodeConfigs = [
     'AR_IO_WALLET', 'OBSERVER_WALLET', 'ADMIN_API_KEY', 'ADMIN_API_KEY_FILE', 'GRAPHQL_HOST', 'GRAPHQL_PORT',
@@ -965,7 +1044,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   // Add core node configs
   coreNodeConfigs.forEach(key => {
     if (nodeConfig[key] != null && nodeConfig[key] !== '' && !seen.has(key)) {
-      lines.push(`${key}=${nodeConfig[key]}`);
+      lines.push(`${key}=${formatEnvValue(nodeConfig[key])}`);
       seen.add(key);
     }
   });
@@ -974,7 +1053,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (dockerConfig.enableBundler) {
     serviceSpecificNodeConfigs.bundler.forEach(key => {
       if (nodeConfig[key] != null && nodeConfig[key] !== '' && !seen.has(key)) {
-        lines.push(`${key}=${nodeConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(nodeConfig[key])}`);
         seen.add(key);
       }
     });
@@ -990,7 +1069,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (dockerConfig.useEnvoy) {
     serviceSpecificDashboardConfigs.envoy.forEach(key => {
       if (dashboardConfig[key] != null && dashboardConfig[key] !== '' && !seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1000,7 +1079,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (anyServiceEnabled) {
     serviceSpecificDashboardConfigs.redis.forEach(key => {
       if (dashboardConfig[key] != null && dashboardConfig[key] !== '' && !seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1010,7 +1089,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (dashboardConfig.ENABLE_CLICKHOUSE) {
     serviceSpecificDashboardConfigs.clickhouse.forEach(key => {
       if (dashboardConfig[key] != null && dashboardConfig[key] !== '' && !seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1020,7 +1099,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (dashboardConfig.ENABLE_LITESTREAM) {
     serviceSpecificDashboardConfigs.litestream.forEach(key => {
       if (dashboardConfig[key] != null && dashboardConfig[key] !== '' && !seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1040,14 +1119,14 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (anyServiceEnabled || dockerConfig.useEnvoy) {
     coreConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, nodeConfig[key])) {
-        lines.push(`${key}=${nodeConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(nodeConfig[key])}`);
         seen.add(key);
       }
     });
     
     // Ensure ENVOY_PORT is always included if Envoy is enabled
     if (dockerConfig.useEnvoy && !seen.has('ENVOY_PORT') && shouldIncludeValue('ENVOY_PORT', dashboardConfig.ENVOY_PORT)) {
-      lines.push(`ENVOY_PORT=${dashboardConfig.ENVOY_PORT}`);
+      lines.push(`ENVOY_PORT=${formatEnvValue(dashboardConfig.ENVOY_PORT)}`);
       seen.add('ENVOY_PORT');
     }
     
@@ -1056,7 +1135,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
       const adminConfigs = ['ADMIN_API_KEY', 'ADMIN_USERNAME', 'ADMIN_PASSWORD'];
       adminConfigs.forEach(key => {
         if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-          lines.push(`${key}=${dashboardConfig[key]}`);
+          lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
           seen.add(key);
         }
       });
@@ -1072,7 +1151,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     ];
     bundlerConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1083,7 +1162,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const aoCuConfigs = ['CU_WALLET', 'PROCESS_CHECKPOINT_TRUSTED_OWNERS', 'ADDITIONAL_AO_CU_ENV'];
     aoCuConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1094,7 +1173,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const grafanaConfigs = ['GRAFANA_PORT'];
     grafanaConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1105,7 +1184,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const clickhouseConfigs = ['CLICKHOUSE_PORT'];
     clickhouseConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1116,7 +1195,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const dashboardOnlyConfigs = ['DASHBOARD_PORT'];
     dashboardOnlyConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1127,7 +1206,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const sslConfigs = ['ENABLE_SSL', 'SSL_CERT_PATH', 'SSL_KEY_PATH'];
     sslConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });
@@ -1166,7 +1245,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const redisConfigs = ['REDIS_MAX_MEMORY', 'EXTRA_REDIS_FLAGS'];
     redisConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${dashboardConfig[key]}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
         seen.add(key);
       }
     });

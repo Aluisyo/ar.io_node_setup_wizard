@@ -88,7 +88,7 @@ function App() {
   const getNextButtonText = () => {
     switch (currentStep) {
       case 'review':
-        return 'Deploy Node & Dashboard';
+        return 'Deploy';
       case 'services-config':
         return 'Review Configuration';
       case 'node-config':

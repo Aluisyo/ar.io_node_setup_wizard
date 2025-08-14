@@ -2,6 +2,7 @@ import React from 'react';
 import { NodeConfig, DashboardConfig, ValidationError } from '../../types';
 
 import { FileUpload } from '../FileUpload';
+import { ANS104FilterBuilder } from '../ANS104FilterBuilder';
 import { Eye, EyeOff, ChevronDown, ChevronRight, Clipboard, Globe, BarChart2, Package } from 'lucide-react';
 
 // Dynamic Arweave loading to completely avoid SubtleCrypto on module load
@@ -682,36 +683,23 @@ const [showAdvanced, setShowAdvanced] = React.useState(false);
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-black mb-2">
-                ANS-104 Unbundle Filter
-              </label>
-              <textarea
+            {/* ANS-104 Filters with Visual Builder */}
+            <div className="md:col-span-2 space-y-6">
+              <ANS104FilterBuilder
                 value={config.ANS104_UNBUNDLE_FILTER || ''}
-                onChange={(e) => handleInputChange('ANS104_UNBUNDLE_FILTER', e.target.value)} onBlur={() => formatJsonField('ANS104_UNBUNDLE_FILTER')}
-className="w-full font-mono px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
-                rows={3}
+                onChange={(value) => handleInputChange('ANS104_UNBUNDLE_FILTER', value)}
+                label="ANS-104 Unbundle Filter"
+                description="JSON filter determining which transactions and data items to unbundle. Supports tag filters, attribute filters, logical operators (and/or/not), hash partitioning, and nested bundle detection. Use visual mode for simple filters or code mode for complex JSON filters."
                 placeholder='{"never": true}'
               />
-              <p className="mt-1 text-sm text-gray-500">
-                JSON filter determining which transactions to unbundle
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-black mb-2">
-                ANS-104 Index Filter
-              </label>
-              <textarea
+              
+              <ANS104FilterBuilder
                 value={config.ANS104_INDEX_FILTER || ''}
-                onChange={(e) => handleInputChange('ANS104_INDEX_FILTER', e.target.value)} onBlur={() => formatJsonField('ANS104_INDEX_FILTER')}
-className="w-full font-mono px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
-                rows={3}
+                onChange={(value) => handleInputChange('ANS104_INDEX_FILTER', value)}
+                label="ANS-104 Index Filter"
+                description="JSON filter determining which data items within bundles to index for querying. Supports tag matching (exact, startsWith), attribute filtering, logical operators, hash partitioning for distributed processing, and nested bundle detection. Use visual mode for basic filters or code mode for advanced configurations."
                 placeholder='{"never": true}'
               />
-              <p className="mt-1 text-sm text-gray-500">
-                JSON filter determining which data items to index
-              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

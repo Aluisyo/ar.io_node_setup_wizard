@@ -75,26 +75,30 @@ export const SuccessStep: React.FC<SuccessStepProps> = ({ config, onReset }) => 
             }
           </p>
           
-          <div className="flex items-center space-x-2 mb-6">
-            <code className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900">
+          <div className="mb-6">
+            <code className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900 mb-2 break-all">
               {gatewayUrl}
             </code>
-            <button
-              onClick={() => copyToClipboard(gatewayUrl)}
-              className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-              title="Copy URL"
-            >
-              <Copy className="w-4 h-4" />
-            </button>
-            <a
-              href={gatewayUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 text-blue-600 hover:text-blue-700 transition-colors"
-              title="Open in new tab"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
+            <div className="flex justify-center space-x-2">
+              <button
+                onClick={() => copyToClipboard(gatewayUrl)}
+                className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                title="Copy URL"
+              >
+                <Copy className="w-3.5 h-3.5 mr-1.5" />
+                Copy
+              </button>
+              <a
+                href={gatewayUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                title="Open in new tab"
+              >
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                Visit
+              </a>
+            </div>
           </div>
           
           <div className="text-sm text-gray-500 space-y-1">
@@ -113,26 +117,30 @@ export const SuccessStep: React.FC<SuccessStepProps> = ({ config, onReset }) => 
             <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">Core API</h3>
             <p className="text-gray-600 mb-6 text-center">Direct access to AR.IO core service</p>
             
-            <div className="flex items-center space-x-2 mb-6">
-              <code className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900">
+            <div className="mb-6">
+              <code className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900 mb-2 break-all">
                 {coreUrl}
               </code>
-              <button
-                onClick={() => copyToClipboard(coreUrl)}
-                className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                title="Copy URL"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-              <a
-                href={coreUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 text-blue-600 hover:text-blue-700 transition-colors"
-                title="Open in new tab"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => copyToClipboard(coreUrl)}
+                  className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                  title="Copy URL"
+                >
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />
+                  Copy
+                </button>
+                <a
+                  href={coreUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  Visit
+                </a>
+              </div>
             </div>
             
             <div className="text-sm text-gray-500 space-y-1">
@@ -152,26 +160,30 @@ export const SuccessStep: React.FC<SuccessStepProps> = ({ config, onReset }) => 
             <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">Admin Dashboard</h3>
             <p className="text-gray-600 mb-6 text-center">Web interface for managing your gateway</p>
             
-            <div className="flex items-center space-x-2 mb-6">
-              <code className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900">
+            <div className="mb-6">
+              <code className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900 mb-2 break-all">
                 {dashboardUrl}
               </code>
-              <button
-                onClick={() => copyToClipboard(dashboardUrl)}
-                className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                title="Copy URL"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-              <a
-                href={dashboardUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 text-blue-600 hover:text-blue-700 transition-colors"
-                title="Open Dashboard"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => copyToClipboard(dashboardUrl)}
+                  className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                  title="Copy URL"
+                >
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />
+                  Copy
+                </button>
+                <a
+                  href={dashboardUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                  title="Open Dashboard"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  Visit
+                </a>
+              </div>
             </div>
             
             <div className="text-sm text-gray-500 space-y-1">
@@ -184,86 +196,219 @@ export const SuccessStep: React.FC<SuccessStepProps> = ({ config, onReset }) => 
       </div>
 
       {/* Additional Services */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 items-stretch">
-
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12 items-stretch">
         {/* Observer */}
         {config.nodeConfig.RUN_OBSERVER && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 text-center h-full flex flex-col justify-between min-h-[20rem]">
-            <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg mx-auto mb-4">
-              <Eye className="w-5 h-5 text-blue-700" />
+            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mx-auto mb-6">
+              <Eye className="w-6 h-6 text-blue-700" />
             </div>
-            <h4 className="font-semibold text-gray-900 mb-2">Observer</h4>
-            <code className="text-xs text-gray-600 mb-3 block">{`${protocol}//${currentHost}:${config.nodeConfig.OBSERVER_PORT || '5050'}`}</code>
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <button onClick={() => copyToClipboard(`${protocol}//${currentHost}:${config.nodeConfig.OBSERVER_PORT || '5050'}`)} className="p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Copy URL"><Copy className="w-4 h-4"/></button>
-              <a href={`${protocol}//${currentHost}:${config.nodeConfig.OBSERVER_PORT || '5050'}`} target="_blank" rel="noopener noreferrer" className="p-2 text-blue-600 hover:text-blue-700 transition-colors" title="Open in new tab"><ExternalLink className="w-4 h-4"/></a>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">Observer</h3>
+            <p className="text-gray-600 mb-6 text-center">Observer service UI for monitoring</p>
+            
+            <div className="mb-6">
+              <code className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900 mb-2 break-all">
+                {`${protocol}//${currentHost}:${config.nodeConfig.OBSERVER_PORT || '5050'}`}
+              </code>
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => copyToClipboard(`${protocol}//${currentHost}:${config.nodeConfig.OBSERVER_PORT || '5050'}`)}
+                  className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                  title="Copy URL"
+                >
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />
+                  Copy
+                </button>
+                <a
+                  href={`${protocol}//${currentHost}:${config.nodeConfig.OBSERVER_PORT || '5050'}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  Visit
+                </a>
+              </div>
             </div>
-            <p className="text-sm text-gray-500">Observer service UI (port {config.nodeConfig.OBSERVER_PORT || '5050'})</p>
+            
+            <div className="text-sm text-gray-500 space-y-1">
+              <p>• Observer service UI</p>
+              <p>• Port {config.nodeConfig.OBSERVER_PORT || '5050'}</p>
+              <p>• Network monitoring interface</p>
+            </div>
           </div>
         )}
 
         {/* Prometheus UI */}
         {config.dockerConfig.enableGrafana && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 text-center h-full flex flex-col justify-between min-h-[20rem]">
-            <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg mx-auto mb-4">
-              <BarChart2 className="w-5 h-5 text-gray-700" />
+            <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-6">
+              <BarChart2 className="w-6 h-6 text-gray-700" />
             </div>
-            <h4 className="font-semibold text-gray-900 mb-2">Prometheus UI</h4>
-            <code className="text-xs text-gray-600 mb-3 block">{`${protocol}//${currentHost}:9090`}</code>
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <button onClick={() => copyToClipboard(`${protocol}//${currentHost}:9090`)} className="p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Copy URL"><Copy className="w-4 h-4"/></button>
-              <a href={`${protocol}//${currentHost}:9090`} target="_blank" rel="noopener noreferrer" className="p-2 text-blue-600 hover:text-blue-700 transition-colors" title="Open in new tab"><ExternalLink className="w-4 h-4"/></a>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">Prometheus UI</h3>
+            <p className="text-gray-600 mb-6 text-center">Metrics collection and query interface</p>
+            
+            <div className="mb-6">
+              <code className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900 mb-2 break-all">
+                {`${protocol}//${currentHost}:9090`}
+              </code>
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => copyToClipboard(`${protocol}//${currentHost}:9090`)}
+                  className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                  title="Copy URL"
+                >
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />
+                  Copy
+                </button>
+                <a
+                  href={`${protocol}//${currentHost}:9090`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  Visit
+                </a>
+              </div>
             </div>
-            <p className="text-sm text-gray-500">Prometheus monitoring UI (port 9090)</p>
+            
+            <div className="text-sm text-gray-500 space-y-1">
+              <p>• Metrics collection system</p>
+              <p>• Port 9090</p>
+              <p>• Query and alert interface</p>
+            </div>
           </div>
         )}
 
         {/* Grafana */}
         {config.dockerConfig.enableGrafana && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 text-center h-full flex flex-col justify-between min-h-[20rem]">
-            <div className="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-lg mx-auto mb-4">
-              <Globe className="w-5 h-5 text-orange-700" />
+            <div className="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg mx-auto mb-6">
+              <BarChart2 className="w-6 h-6 text-orange-700" />
             </div>
-            <h4 className="font-semibold text-gray-900 mb-2">Grafana</h4>
-            <code className="text-xs text-gray-600 mb-3 block">{grafanaUrl}</code>
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <button onClick={() => copyToClipboard(grafanaUrl)} className="p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Copy URL"><Copy className="w-4 h-4"/></button>
-              <a href={grafanaUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-blue-600 hover:text-blue-700 transition-colors" title="Open in new tab"><ExternalLink className="w-4 h-4"/></a>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">Grafana</h3>
+            <p className="text-gray-600 mb-6 text-center">Advanced monitoring and visualization</p>
+            
+            <div className="mb-6">
+              <code className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900 mb-2 break-all">
+                {grafanaUrl}
+              </code>
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => copyToClipboard(grafanaUrl)}
+                  className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                  title="Copy URL"
+                >
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />
+                  Copy
+                </button>
+                <a
+                  href={grafanaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  Visit
+                </a>
+              </div>
             </div>
-            <p className="text-sm text-gray-500">Monitoring & metrics dashboard (port {config.dashboardConfig.GRAFANA_PORT})</p>
+            
+            <div className="text-sm text-gray-500 space-y-1">
+              <p>• Monitoring dashboards</p>
+              <p>• Port {config.dashboardConfig.GRAFANA_PORT}</p>
+              <p>• Data visualization</p>
+            </div>
           </div>
         )}
 
         {/* Bundler Service */}
         {config.dockerConfig.enableBundler && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 text-center h-full flex flex-col justify-between min-h-[20rem]">
-            <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-lg mx-auto mb-4">
-              <Package className="w-5 h-5 text-green-700" />
+            <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mx-auto mb-6">
+              <Package className="w-6 h-6 text-green-700" />
             </div>
-            <h4 className="font-semibold text-gray-900 mb-2">Turbo Bundler</h4>
-            <code className="text-xs text-gray-600 mb-3 block">{bundlerUrl}</code>
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <button onClick={() => copyToClipboard(bundlerUrl)} className="p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Copy URL"><Copy className="w-4 h-4"/></button>
-              <a href={bundlerUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-blue-600 hover:text-blue-700 transition-colors" title="Open in new tab"><ExternalLink className="w-4 h-4"/></a>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">Turbo Bundler</h3>
+            <p className="text-gray-600 mb-6 text-center">ANS-104 data bundling service</p>
+            
+            <div className="mb-6">
+              <code className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900 mb-2 break-all">
+                {bundlerUrl}
+              </code>
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => copyToClipboard(bundlerUrl)}
+                  className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                  title="Copy URL"
+                >
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />
+                  Copy
+                </button>
+                <a
+                  href={bundlerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  Visit
+                </a>
+              </div>
             </div>
-            <p className="text-sm text-gray-500">ANS-104 bundling service (port 5100)</p>
+            
+            <div className="text-sm text-gray-500 space-y-1">
+              <p>• ANS-104 bundling service</p>
+              <p>• Port 5100</p>
+              <p>• Data upload and processing</p>
+            </div>
           </div>
         )}
 
         {/* AO CU Service */}
         {config.dockerConfig.enableAoCu && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 text-center h-full flex flex-col justify-between min-h-[20rem]">
-            <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-lg mx-auto mb-4">
-              <Cpu className="w-5 h-5 text-purple-700" />
+            <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mx-auto mb-6">
+              <Cpu className="w-6 h-6 text-purple-700" />
             </div>
-            <h4 className="font-semibold text-gray-900 mb-2">AO CU</h4>
-            <code className="text-xs text-gray-600 mb-3 block">{aoCuUrl}</code>
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <button onClick={() => copyToClipboard(aoCuUrl)} className="p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Copy URL"><Copy className="w-4 h-4"/></button>
-              <a href={aoCuUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-blue-600 hover:text-blue-700 transition-colors" title="Open in new tab"><ExternalLink className="w-4 h-4"/></a>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">AO CU</h3>
+            <p className="text-gray-600 mb-6 text-center">AO Compute Unit service</p>
+            
+            <div className="mb-6">
+              <code className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-900 mb-2 break-all">
+                {aoCuUrl}
+              </code>
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => copyToClipboard(aoCuUrl)}
+                  className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                  title="Copy URL"
+                >
+                  <Copy className="w-3.5 h-3.5 mr-1.5" />
+                  Copy
+                </button>
+                <a
+                  href={aoCuUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  Visit
+                </a>
+              </div>
             </div>
-            <p className="text-sm text-gray-500">AO Compute Unit service (port 6363)</p>
+            
+            <div className="text-sm text-gray-500 space-y-1">
+              <p>• AO Compute Unit</p>
+              <p>• Port 6363</p>
+              <p>• Decentralized computing</p>
+            </div>
           </div>
         )}
       </div>
@@ -287,10 +432,10 @@ export const SuccessStep: React.FC<SuccessStepProps> = ({ config, onReset }) => 
           href={gatewayUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className={`inline-flex items-center px-6 py-3 font-semibold rounded-lg transition-all duration-200 ${
+          className={`inline-flex items-center px-6 py-3 font-semibold rounded-lg transition-all duration-200 shadow-sm ${
             config.dashboardConfig.ENABLE_DASHBOARD 
-              ? 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50' 
-              : 'bg-gray-900 text-white hover:bg-gray-800 shadow-sm'
+              ? 'bg-white border border-gray-300 text-gray-900 hover:bg-gray-50 hover:border-gray-400' 
+              : 'bg-gray-900 text-white hover:bg-gray-800'
           }`}
         >
           <Server className="w-5 h-5 mr-2" />
