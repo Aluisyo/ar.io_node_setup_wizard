@@ -925,7 +925,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   };
   
   // Helper function to properly format environment variable values
-  const formatEnvValue = (value) => {
+  const formatEnvValue = (value, key = '') => {
     if (typeof value !== 'string') {
       value = String(value);
     }
@@ -934,6 +934,22 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const trimmed = value.trim();
     if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
       // For JSON values, ensure they're on a single line and return as-is (AR.IO format)
+      // JSON should never be quoted as Docker Compose expects raw JSON
+      return value.replace(/\s*\n\s*/g, ' ').trim();
+    }
+    
+    // Special handling for Redis flags - they should not be quoted as they contain command line arguments
+    if (key === 'EXTRA_REDIS_FLAGS') {
+      return value;
+    }
+    
+    // Special handling for filter and configuration keys that expect JSON
+    const jsonKeys = [
+      'ANS104_UNBUNDLE_FILTER', 'ANS104_INDEX_FILTER', 
+      'WEBHOOK_INDEX_FILTER', 'WEBHOOK_BLOCK_FILTER'
+    ];
+    if (jsonKeys.includes(key)) {
+      // These should always be treated as JSON and never quoted
       return value.replace(/\s*\n\s*/g, ' ').trim();
     }
     
@@ -951,6 +967,9 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     'AR_IO_WALLET', 'OBSERVER_WALLET', 'ADMIN_API_KEY', 'ADMIN_API_KEY_FILE', 'GRAPHQL_HOST', 'GRAPHQL_PORT',
     'ARNS_ROOT_HOST', 'START_HEIGHT', 'STOP_HEIGHT', 'TRUSTED_ARWEAVE_URL', 'TRUSTED_NODE_URL',
     'TRUSTED_GATEWAY_URL', 'TRUSTED_ARNS_GATEWAY_URL', 'INSTANCE_ID', 'LOG_FORMAT', 'LOG_FILTER',
+    // ANS-104 Bundle processing filters (core node functionality)
+    'ANS104_UNBUNDLE_FILTER', 'ANS104_INDEX_FILTER',
+    // Webhook configuration
     'WEBHOOK_TARGET_SERVERS', 'WEBHOOK_INDEX_FILTER', 'WEBHOOK_BLOCK_FILTER',
     'SKIP_CACHE', 'FILTER_CHANGE_REPROCESS', 'SANDBOX_PROTOCOL', 'SIMULATED_REQUEST_FAILURE_RATE',
     'START_WRITERS', 'RUN_OBSERVER', 'ENABLE_MEMPOOL_WATCHER', 'MEMPOOL_POLLING_INTERVAL_MS',
@@ -984,7 +1003,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   // Add core node configs
   coreNodeConfigs.forEach(key => {
     if (nodeConfig[key] != null && nodeConfig[key] !== '' && !seen.has(key)) {
-      lines.push(`${key}=${formatEnvValue(nodeConfig[key])}`);
+      lines.push(`${key}=${formatEnvValue(nodeConfig[key], key)}`);
       seen.add(key);
     }
   });
@@ -993,7 +1012,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (dockerConfig.enableBundler) {
     serviceSpecificNodeConfigs.bundler.forEach(key => {
       if (nodeConfig[key] != null && nodeConfig[key] !== '' && !seen.has(key)) {
-        lines.push(`${key}=${formatEnvValue(nodeConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(nodeConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1009,7 +1028,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (dockerConfig.useEnvoy) {
     serviceSpecificDashboardConfigs.envoy.forEach(key => {
       if (dashboardConfig[key] != null && dashboardConfig[key] !== '' && !seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1019,7 +1038,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (anyServiceEnabled) {
     serviceSpecificDashboardConfigs.redis.forEach(key => {
       if (dashboardConfig[key] != null && dashboardConfig[key] !== '' && !seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1029,7 +1048,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (dashboardConfig.ENABLE_CLICKHOUSE) {
     serviceSpecificDashboardConfigs.clickhouse.forEach(key => {
       if (dashboardConfig[key] != null && dashboardConfig[key] !== '' && !seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1039,7 +1058,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (dashboardConfig.ENABLE_LITESTREAM) {
     serviceSpecificDashboardConfigs.litestream.forEach(key => {
       if (dashboardConfig[key] != null && dashboardConfig[key] !== '' && !seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1059,14 +1078,14 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
   if (anyServiceEnabled || dockerConfig.useEnvoy) {
     coreConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, nodeConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(nodeConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(nodeConfig[key], key)}`);
         seen.add(key);
       }
     });
     
     // Ensure ENVOY_PORT is always included if Envoy is enabled
     if (dockerConfig.useEnvoy && !seen.has('ENVOY_PORT') && shouldIncludeValue('ENVOY_PORT', dashboardConfig.ENVOY_PORT)) {
-      lines.push(`ENVOY_PORT=${formatEnvValue(dashboardConfig.ENVOY_PORT)}`);
+      lines.push(`ENVOY_PORT=${formatEnvValue(dashboardConfig.ENVOY_PORT, 'ENVOY_PORT')}`);
       seen.add('ENVOY_PORT');
     }
     
@@ -1075,7 +1094,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
       const adminConfigs = ['ADMIN_API_KEY', 'ADMIN_USERNAME', 'ADMIN_PASSWORD'];
       adminConfigs.forEach(key => {
         if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-          lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+          lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
           seen.add(key);
         }
       });
@@ -1091,7 +1110,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     ];
     bundlerConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1102,7 +1121,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const aoCuConfigs = ['CU_WALLET', 'PROCESS_CHECKPOINT_TRUSTED_OWNERS', 'ADDITIONAL_AO_CU_ENV'];
     aoCuConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1113,7 +1132,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const grafanaConfigs = ['GRAFANA_PORT'];
     grafanaConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1124,7 +1143,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const clickhouseConfigs = ['CLICKHOUSE_PORT'];
     clickhouseConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1135,7 +1154,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const dashboardOnlyConfigs = ['DASHBOARD_PORT'];
     dashboardOnlyConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1146,7 +1165,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const sslConfigs = ['ENABLE_SSL', 'SSL_CERT_PATH', 'SSL_KEY_PATH'];
     sslConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });
@@ -1185,7 +1204,7 @@ function buildEnvFile({ nodeConfig, dashboardConfig, dockerConfig }) {
     const redisConfigs = ['REDIS_MAX_MEMORY', 'EXTRA_REDIS_FLAGS'];
     redisConfigs.forEach(key => {
       if (!seen.has(key) && shouldIncludeValue(key, dashboardConfig[key])) {
-        lines.push(`${key}=${formatEnvValue(dashboardConfig[key])}`);
+        lines.push(`${key}=${formatEnvValue(dashboardConfig[key], key)}`);
         seen.add(key);
       }
     });

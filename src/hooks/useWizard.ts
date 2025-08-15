@@ -367,9 +367,9 @@ export const useWizard = () => {
       CLICKHOUSE_PORT_3: '8443',
       CLICKHOUSE_USER: '',
       CLICKHOUSE_PASSWORD: '',
-      // Litestream configuration
+      // Litestream configuration (defaults based on official AR.IO Node configuration)
       AR_IO_SQLITE_BACKUP_S3_BUCKET_NAME: '',
-      AR_IO_SQLITE_BACKUP_S3_BUCKET_REGION: '',
+      AR_IO_SQLITE_BACKUP_S3_BUCKET_REGION: 'us-east-1',
       AR_IO_SQLITE_BACKUP_S3_BUCKET_ACCESS_KEY: '',
       AR_IO_SQLITE_BACKUP_S3_BUCKET_SECRET_KEY: '',
       AR_IO_SQLITE_BACKUP_S3_BUCKET_PREFIX: '',

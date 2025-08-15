@@ -826,7 +826,44 @@ const [showAdvanced, setShowAdvanced] = React.useState(false);
                   value={config.MEMPOOL_POLLING_INTERVAL_MS || ''}
                   onChange={(e) => handleInputChange('MEMPOOL_POLLING_INTERVAL_MS', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
-placeholder="30000" />
+                  placeholder="30000" />
+              </div>
+              
+              {/* Webhook Configuration */}
+              <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-6">
+                <h4 className="text-lg font-medium text-black mb-4">Webhook Configuration</h4>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">Webhook Target Servers</label>
+                    <input
+                      type="text"
+                      value={config.WEBHOOK_TARGET_SERVERS || ''}
+                      onChange={(e) => handleInputChange('WEBHOOK_TARGET_SERVERS', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                      placeholder="http://localhost:3000,http://localhost:3001"
+                    />
+                    <p className="mt-1 text-sm text-gray-500">
+                      Comma-separated list of servers where webhooks will be sent
+                    </p>
+                  </div>
+                  
+                  <ANS104FilterBuilder
+                    value={config.WEBHOOK_INDEX_FILTER || ''}
+                    onChange={(value) => handleInputChange('WEBHOOK_INDEX_FILTER', value)}
+                    label="Webhook Index Filter"
+                    description="JSON filter determining which transactions and data items will trigger webhook notifications. Uses the same filter syntax as ANS-104 filters."
+                    placeholder='{"never": true}'
+                  />
+                  
+                  <ANS104FilterBuilder
+                    value={config.WEBHOOK_BLOCK_FILTER || ''}
+                    onChange={(value) => handleInputChange('WEBHOOK_BLOCK_FILTER', value)}
+                    label="Webhook Block Filter"
+                    description="JSON filter determining which blocks will trigger webhook notifications. Uses the same filter syntax as ANS-104 filters."
+                    placeholder='{"never": true}'
+                  />
+                </div>
               </div>
               
               {/* Additional Environment Variables */}
