@@ -127,28 +127,17 @@ app.post('/deploy', async (req, res) => {
     
     appendLog(`Using deployment directory: ${deployDir}`);
     appendLog('Repository will be updated if it exists, or cloned if it does not exist');
-    // Get latest tag from GitHub API
-    appendLog('Fetching latest AR.IO node version...');
-    const tagsResponse = await fetch('https://api.github.com/repos/ar-io/ar-io-node/tags');
-    const tagsText = await tagsResponse.text();
-    let latestTag = 'develop';
-    try {
-      const tags = JSON.parse(tagsText);
-      if (Array.isArray(tags) && tags.length > 0 && tags[0].name) {
-        latestTag = tags[0].name;
-      }
-    } catch (e) {
-      appendLog(`Error parsing tags JSON: ${e.message}, falling back to 'develop'`);
-    }
-    appendLog(`Using tag: ${latestTag}`);
+    // Use main branch instead of tags
+    const targetBranch = 'main';
+    appendLog(`Using branch: ${targetBranch}`);
     
     // Check if repository already exists and update it, otherwise clone
     const repoExists = await fs.access(deployDir).then(() => true).catch(() => false);
     
     if (repoExists) {
-      appendLog(`Repository exists, updating to latest version (${latestTag})...`);
+      appendLog(`Repository exists, updating to latest version (${targetBranch})...`);
       
-      const updateProcess = spawn('bash', ['-c', `cd "${deployDir}" && git fetch --tags && git reset --hard && git checkout ${latestTag} && git pull origin ${latestTag}`], { stdio: 'pipe' });
+      const updateProcess = spawn('bash', ['-c', `cd "${deployDir}" && git fetch origin && git reset --hard && git checkout ${targetBranch} && git pull origin ${targetBranch}`], { stdio: 'pipe' });
       
       await new Promise((resolve, reject) => {
         let output = '';
@@ -174,12 +163,11 @@ app.post('/deploy', async (req, res) => {
     // Clone repository if it doesn't exist or update failed
     const stillNeedsClone = !(await fs.access(deployDir).then(() => true).catch(() => false));
     if (stillNeedsClone || !repoExists) {
-      appendLog(`Cloning AR.IO node repository (${latestTag})...`);
+      appendLog(`Cloning AR.IO node repository (${targetBranch})...`);
       
       const cloneProcess = spawn('git', [
         'clone',
-        '--branch', latestTag,
-        '--depth', '1',
+        '--branch', targetBranch,
         'https://github.com/ar-io/ar-io-node.git',
         deployDir
       ], { stdio: 'pipe' });
