@@ -215,16 +215,16 @@ app.post('/deploy', async (req, res) => {
           appendLog(`⚠️ Failed to download .env.dashboard.example: ${envDashboardResponse.status}`);
         }
         
-        // Fetch docker-compose.dashboard.yml
-        const dockerComposeUrl = 'https://raw.githubusercontent.com/Aluisyo/ar.io_admin_dashboard/main/docker-compose.dashboard.yml';
+        // Fetch docker-compose.dashboard.yaml
+        const dockerComposeUrl = 'https://raw.githubusercontent.com/Aluisyo/ar.io_admin_dashboard/main/docker-compose.dashboard.yaml';
         const dockerComposeResponse = await fetch(dockerComposeUrl);
         
         if (dockerComposeResponse.ok) {
           const dockerComposeContent = await dockerComposeResponse.text();
-          await fs.writeFile(`${deployDir}/docker-compose.dashboard.yml`, dockerComposeContent, 'utf8');
-          appendLog('✅ Downloaded docker-compose.dashboard.yml');
+          await fs.writeFile(`${deployDir}/docker-compose.dashboard.yaml`, dockerComposeContent, 'utf8');
+          appendLog('✅ Downloaded docker-compose.dashboard.yaml');
         } else {
-          appendLog(`⚠️ Failed to download docker-compose.dashboard.yml: ${dockerComposeResponse.status}`);
+          appendLog(`⚠️ Failed to download docker-compose.dashboard.yaml: ${dockerComposeResponse.status}`);
         }
         
         // Create .env.dashboard file with user configuration
@@ -316,7 +316,7 @@ app.post('/deploy', async (req, res) => {
     
     // Add dashboard compose file if dashboard is enabled
     if (config.dockerConfig.enableDashboard) {
-      const dashboardComposePath = `${deployDir}/docker-compose.dashboard.yml`;
+      const dashboardComposePath = `${deployDir}/docker-compose.dashboard.yaml`;
       if (await fs.access(dashboardComposePath).then(() => true).catch(() => false)) {
         let dashboardCompose = await fs.readFile(dashboardComposePath, 'utf8');
         
@@ -337,7 +337,7 @@ app.post('/deploy', async (req, res) => {
         
         await fs.writeFile(dashboardComposePath, dashboardCompose, 'utf8');
         appendLog('Fixed dashboard compose file: port mappings updated');
-        composeFiles.push('docker-compose.dashboard.yml');
+        composeFiles.push('docker-compose.dashboard.yaml');
       } else {
         appendLog('⚠️ Dashboard compose file not found, dashboard may not be deployed');
       }
